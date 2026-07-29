@@ -1,0 +1,15 @@
+# Запрет доступа к служебным папкам
+RewriteEngine On
+RewriteRule ^storage/ - [F,L]
+
+# PHP-обработка
+Options -Indexes
+DirectoryIndex index.php
+
+# UTF-8 по умолчанию
+AddDefaultCharset UTF-8
+
+# Защита от просмотра скрытых файлов
+<FilesMatch "^\.">
+    Deny from all
+</FilesMatch>

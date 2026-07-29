@@ -296,21 +296,40 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Oxygen,Ubunt
   };
 
   // ============================================================
-  // BX24 wrappers
+  // Bitrix24 REST API wrapper
   // ============================================================
   function b24(method, params) {
     return new Promise(function(resolve, reject) {
-      if (typeof BX24 === 'undefined') {
-        reject(new Error('BX24 не инициализирован. Запустите приложение в Битрикс24.'));
-        return;
+      if (typeof BX24 !== 'undefined') {
+        BX24.callMethod(method, params, function(res) {
+          if (res.error()) {
+            reject(new Error(res.error().ex || res.error().error_description || 'Ошибка вызова API'));
+          } else {
+            resolve(res.data());
+          }
+        });
+      } else if (app.auth && app.auth.domain && app.auth.access_token) {
+        var url = 'https://' + app.auth.domain + '/rest/' + method + '?auth=' + app.auth.access_token;
+        var xhr = new XMLHttpRequest();
+        xhr.open('POST', url, true);
+        xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+        xhr.onload = function() {
+          try {
+            var r = JSON.parse(xhr.responseText);
+            if (r.error) {
+              reject(new Error(r.error_description || r.error));
+            } else {
+              resolve(r.result);
+            }
+          } catch(e) {
+            reject(new Error('Ошибка обработки ответа'));
+          }
+        };
+        xhr.onerror = function() { reject(new Error('Ошибка сети')); };
+        xhr.send(new URLSearchParams(params).toString());
+      } else {
+        reject(new Error('Не удалось авторизоваться в Битрикс24.'));
       }
-      BX24.callMethod(method, params, function(res) {
-        if (res.error()) {
-          reject(new Error(res.error().ex || res.error().error_description || 'Ошибка вызова API'));
-        } else {
-          resolve(res.data());
-        }
-      });
     });
   }
 
@@ -425,14 +444,24 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Oxygen,Ubunt
   // App initialization
   // ============================================================
   app.init = function() {
-    if (typeof BX24 === 'undefined') {
-      showError('Ошибка инициализации', 'Библиотека BX24 не обнаружена. Приложение должно работать внутри Битрикс24.');
+    if (window.__BX_AUTH__ && window.__BX_AUTH__.domain && window.__BX_AUTH__.AUTH_ID) {
+      app.auth = {
+        domain: window.__BX_AUTH__.domain,
+        access_token: window.__BX_AUTH__.AUTH_ID,
+        refresh_token: window.__BX_AUTH__.REFRESH_ID || '',
+        member_id: window.__BX_AUTH__.member_id || ''
+      };
+      app.loadConfig();
       return;
     }
-    BX24.init(function(auth) {
-      app.auth = auth;
-      app.loadConfig();
-    });
+    if (typeof BX24 !== 'undefined') {
+      BX24.init(function(auth) {
+        app.auth = auth;
+        app.loadConfig();
+      });
+      return;
+    }
+    showError('Ошибка инициализации', 'Приложение должно работать внутри Битрикс24.');
   };
 
   app.loadConfig = function() {

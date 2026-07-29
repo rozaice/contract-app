@@ -683,7 +683,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Oxygen,Ubunt
     data.contract_amount = val('contract_amount');
     data.nds_enabled = $('nds_enabled').checked;
     data.nds_percent = data.nds_enabled ? parseFloat(val('nds_percent')) || 0 : 0;
-    data.guest_type = app.guestType;
+    data.guestType = app.guestType;
 
     if (app.guestType === 'individual') {
       data.full_name = val('full_name');

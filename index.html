@@ -181,12 +181,32 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Oxygen,Ubunt
       <h2>Данные физического лица</h2>
       <div class="form-row">
         <div class="form-group">
-          <label for="full_name">ФИО полностью</label>
-          <input type="text" id="full_name" placeholder="Иванов Иван Иванович">
+          <label for="last_name">Фамилия</label>
+          <input type="text" id="last_name" placeholder="Иванов">
         </div>
+        <div class="form-group">
+          <label for="first_name">Имя</label>
+          <input type="text" id="first_name" placeholder="Иван">
+        </div>
+        <div class="form-group">
+          <label for="second_name">Отчество</label>
+          <input type="text" id="second_name" placeholder="Иванович">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label for="birth_date">Дата рождения</label>
+          <input type="date" id="birth_date">
+        </div>
+      </div>
+      <div class="form-row">
         <div class="form-group">
           <label for="passport_number">Серия и номер паспорта</label>
           <input type="text" id="passport_number" placeholder="45 06 123456">
+        </div>
+        <div class="form-group">
+          <label for="passport_code">Код подразделения</label>
+          <input type="text" id="passport_code" placeholder="160-001">
         </div>
       </div>
       <div class="form-row">
@@ -686,8 +706,12 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Oxygen,Ubunt
     data.guestType = app.guestType;
 
     if (app.guestType === 'individual') {
-      data.full_name = val('full_name');
+      data.last_name = val('last_name');
+      data.first_name = val('first_name');
+      data.second_name = val('second_name');
+      data.birth_date = val('birth_date');
       data.passport_number = val('passport_number');
+      data.passport_code = val('passport_code');
       data.passport_issue_date = val('passport_issue_date');
       data.passport_issued_by = val('passport_issued_by');
       data.registration_address = val('registration_address');
@@ -725,7 +749,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Oxygen,Ubunt
     if (!data.contract_amount || parseFloat(data.contract_amount) <= 0) errors.push('Укажите сумму договора');
 
     if (data.guestType === 'individual') {
-      if (!data.full_name) errors.push('Укажите ФИО');
+      if (!data.last_name) errors.push('Укажите фамилию');
+      if (!data.first_name) errors.push('Укажите имя');
       if (!data.passport_number) errors.push('Укажите серию и номер паспорта');
       if (!data.passport_issue_date) errors.push('Укажите дату выдачи паспорта');
       if (!data.passport_issued_by) errors.push('Укажите кем выдан паспорт');
@@ -751,7 +776,16 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Oxygen,Ubunt
     var totalWithNds = amount + ndsAmount;
 
     var p = {
-      CONTRACT_NUMBER: data.contract_number,
+      'npp': data.contract_number,
+      'contact.lastname': data.last_name || '',
+      'contact.firstname': data.first_name || '',
+      'contact.secondname': data.second_name || '',
+      'userfield1': formatDateRu(data.birth_date),
+      'contact.passport_num': data.passport_number || '',
+      'contact.passport_org': data.passport_issued_by || '',
+      'contact.passport_date': formatDateRu(data.passport_issue_date),
+      'contact.passport_code': data.passport_code || '',
+      'contact.passport_address': data.registration_address || '',
       CONTRACT_DATE: formatDateRu(data.contract_date),
       SERVICE_NAME: data.service,
       CONTRACT_AMOUNT: amount.toFixed(2).replace('.', ','),
@@ -762,13 +796,6 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Oxygen,Ubunt
       CURRENT_DATE: formatDateRu(todayStr()),
       CURRENT_YEAR: currentYear(),
       GUEST_TYPE: data.guestType === 'legal' ? 'Юридическое лицо' : 'Физическое лицо',
-      // Individual
-      FULL_NAME: data.full_name || '',
-      PASSPORT_NUMBER: data.passport_number || '',
-      PASSPORT_ISSUE_DATE: formatDateRu(data.passport_issue_date),
-      PASSPORT_ISSUED_BY: data.passport_issued_by || '',
-      REGISTRATION_ADDRESS: data.registration_address || '',
-      // Legal
       COMPANY_NAME: data.company_name || '',
       INN: data.inn || '',
       OGRN: data.ogrn || '',
@@ -776,7 +803,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Oxygen,Ubunt
       BANK_ACCOUNT: data.bank_account || '',
       CORRESPONDENT_ACCOUNT: data.correspondent_account || '',
       BIK: data.bik || '',
-      PHONE: data.phone || ''
+      PHONE: data.phone || '',
+      FULL_NAME: (data.last_name || '') + ' ' + (data.first_name || '') + ' ' + (data.second_name || '')
     };
     return p;
   };
@@ -837,7 +865,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Oxygen,Ubunt
             return para.replace(/<\/w:r>\s*<w:r[^>]*>/g, '');
           });
           Object.keys(placeholders).forEach(function(key) {
-            var re = new RegExp('\\{' + key + '\\}', 'g');
+            var re = new RegExp('\\$\\{' + key.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\}', 'g');
             result = result.replace(re, placeholders[key]);
           });
           zip.file(path, result);
@@ -1000,8 +1028,12 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Oxygen,Ubunt
     app.toggleNDS();
     setVal('nds_percent', '20');
     // Clear individual fields
-    setVal('full_name', '');
+    setVal('last_name', '');
+    setVal('first_name', '');
+    setVal('second_name', '');
+    setVal('birth_date', '');
     setVal('passport_number', '');
+    setVal('passport_code', '');
     setVal('passport_issue_date', '');
     setVal('passport_issued_by', '');
     setVal('registration_address', '');

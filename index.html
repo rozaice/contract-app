@@ -1,0 +1,933 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Конструктор договоров</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{--blue:#2fc6f6;--blue-h:#45d0fa;--blue-a:#1fb0df;--text:#525c69;--text2:#828b95;--bg:#eef2f4;--card:#fff;--border:#c6cdd3;--ok:#9dcf4a;--err:#f15b5b;--warn:#ffa900;--rad:8px;--sh:0 2px 12px rgba(0,0,0,.08)}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Oxygen,Ubuntu,sans-serif;background:var(--bg);color:var(--text);font-size:14px;line-height:1.5;min-height:100vh}
+.header{background:var(--card);border-bottom:1px solid var(--border);padding:16px 24px;position:sticky;top:0;z-index:100;box-shadow:0 1px 4px rgba(0,0,0,.04)}
+.header h1{font-size:20px;font-weight:600;color:var(--text)}
+.header h1 span{color:var(--blue)}
+.subtitle{font-size:12px;color:var(--text2);margin-top:2px}
+.container{max-width:720px;margin:0 auto;padding:20px 16px 60px}
+.card{background:var(--card);border-radius:var(--rad);box-shadow:var(--sh);padding:24px;margin-bottom:16px}
+.card h2{font-size:16px;font-weight:600;margin-bottom:16px;padding-bottom:12px;border-bottom:1px solid #eee;color:var(--text)}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px 16px;margin-bottom:4px}
+.form-row.one{grid-template-columns:1fr}
+.form-row.three{grid-template-columns:1fr 1fr 1fr}
+@media(max-width:600px){.form-row{grid-template-columns:1fr}.form-row.three{grid-template-columns:1fr}}
+.form-group{display:flex;flex-direction:column;gap:4px;margin-bottom:12px}
+.form-group label{font-size:13px;font-weight:500;color:var(--text)}
+.form-group .hint{font-size:11px;color:var(--text2)}
+.form-group input,.form-group select{padding:8px 12px;border:1px solid var(--border);border-radius:6px;font-size:14px;font-family:inherit;color:var(--text);background:#fff;transition:border-color .15s;outline:none;width:100%}
+.form-group input:focus,.form-group select:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(47,198,246,.15)}
+.form-group input.error{border-color:var(--err)}
+.form-group .error-text{color:var(--err);font-size:12px;display:none}
+.toggle-group{display:flex;gap:0;margin-bottom:16px;border-radius:var(--rad);overflow:hidden;border:1px solid var(--border);background:var(--bg)}
+.toggle-btn{flex:1;padding:10px 16px;text-align:center;cursor:pointer;font-size:14px;font-weight:500;border:none;background:transparent;color:var(--text2);transition:all .15s;font-family:inherit}
+.toggle-btn:hover{background:rgba(47,198,246,.08)}
+.toggle-btn.active{background:var(--blue);color:#fff;box-shadow:0 2px 8px rgba(47,198,246,.3)}
+.service-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:16px}
+@media(max-width:500px){.service-grid{grid-template-columns:1fr}}
+.service-card{border:2px solid var(--border);border-radius:var(--rad);padding:14px 12px;text-align:center;cursor:pointer;transition:all .15s;background:var(--card);font-size:14px;font-weight:500;color:var(--text)}
+.service-card:hover{border-color:var(--blue);background:rgba(47,198,246,.04)}
+.service-card.active{border-color:var(--blue);background:rgba(47,198,246,.08);color:var(--blue)}
+.checkbox-row{display:flex;align-items:center;gap:10px;margin-bottom:4px}
+.checkbox-row input[type=checkbox]{width:18px;height:18px;cursor:pointer;accent-color:var(--blue)}
+.checkbox-row label{cursor:pointer;font-size:14px;user-select:none}
+.nds-field{display:none;margin-top:8px}
+.nds-field.show{display:block}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:10px 28px;border:none;border-radius:6px;font-size:14px;font-weight:500;cursor:pointer;transition:all .15s;font-family:inherit;text-decoration:none}
+.btn-primary{background:var(--blue);color:#fff}
+.btn-primary:hover{background:var(--blue-h)}
+.btn-primary:active{background:var(--blue-a)}
+.btn-primary:disabled{opacity:.5;cursor:not-allowed}
+.btn-secondary{background:#f5f5f5;color:var(--text);border:1px solid var(--border)}
+.btn-secondary:hover{background:#eee}
+.btn-success{background:var(--ok);color:#fff}
+.btn-success:hover{opacity:.9}
+.form-footer{display:flex;justify-content:flex-end;gap:12px;margin-top:20px;padding-top:16px;border-top:1px solid #eee}
+.field-section{display:none}
+.field-section.show{display:block}
+.section-divider{height:1px;background:#eee;margin:16px 0}
+
+/* Status */
+#status-wrap{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.4);z-index:999;display:none;align-items:center;justify-content:center}
+#status-wrap.show{display:flex}
+#status-box{background:var(--card);border-radius:var(--rad);padding:32px;max-width:440px;width:90%;text-align:center;box-shadow:0 12px 40px rgba(0,0,0,.15)}
+#status-icon{font-size:48px;margin-bottom:12px}
+#status-title{font-size:18px;font-weight:600;margin-bottom:8px}
+#status-text{color:var(--text2);margin-bottom:20px;line-height:1.6;font-size:14px}
+#status-actions{display:flex;flex-direction:column;gap:8px}
+#status-actions .btn{width:100%}
+
+/* Progress */
+.progress-overlay{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(255,255,255,.95);z-index:998;display:none;align-items:center;justify-content:center;flex-direction:column;gap:16px}
+.progress-overlay.show{display:flex}
+.spinner{width:40px;height:40px;border:4px solid #e0e0e0;border-top-color:var(--blue);border-radius:50%;animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.progress-text{font-size:15px;color:var(--text);font-weight:500}
+
+/* Setup */
+#setup-section{display:none}
+#setup-section.show{display:block}
+#form-section{display:none}
+#form-section.show{display:block}
+.setup-info{background:#f0f8ff;border:1px solid #c5e4f5;border-radius:var(--rad);padding:16px;margin-bottom:16px;font-size:13px;line-height:1.7}
+.setup-info strong{color:var(--blue)}
+.hidden-field{display:none}
+
+/* Existing header/footer toggle */
+.doc-info{font-size:12px;color:var(--text2);padding:8px 12px;background:#f8f9fa;border-radius:6px;margin-bottom:12px}
+
+/* Contract number display */
+.contract-number-display{font-size:24px;font-weight:700;color:var(--blue);text-align:center;padding:8px 0 4px}
+.contract-number-label{font-size:12px;color:var(--text2);text-align:center}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>Конструктор <span>договоров</span></h1>
+  <div class="subtitle">Создание договоров аренды из шаблонов</div>
+</div>
+
+<div class="container">
+
+  <!-- Setup -->
+  <div id="setup-section">
+    <div class="card">
+      <h2>Настройка приложения</h2>
+      <div class="setup-info">
+        <strong>Первый запуск.</strong> Для работы приложения необходимо указать ID группы (проекта) «Туган Як» в Битрикс24.<br>
+        ID группы можно узнать из адресной строки при переходе в группу: <code>/workgroups/group/<strong>ID</strong>/</code>
+      </div>
+      <div class="form-row one">
+        <div class="form-group">
+          <label>ID группы (проекта)</label>
+          <input type="number" id="setup-group-id" placeholder="Например: 42" min="1">
+          <div class="hint">ID группы, в которой находится папка «Шаблоны договоров»</div>
+        </div>
+      </div>
+      <div class="form-row one" id="setup-info-extra" style="display:none"></div>
+      <div class="form-footer">
+        <button class="btn btn-primary" id="setup-btn" onclick="app.setupGroup()">Настроить</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main Form -->
+  <div id="form-section">
+    <!-- Config info -->
+    <div id="config-info" class="doc-info" style="display:none;margin-bottom:12px"></div>
+
+    <!-- Guest type -->
+    <div class="card">
+      <h2>Тип контрагента</h2>
+      <div class="toggle-group" id="guest-toggle">
+        <button class="toggle-btn" data-type="individual" onclick="app.toggleGuestType('individual')">Физическое лицо</button>
+        <button class="toggle-btn active" data-type="legal" onclick="app.toggleGuestType('legal')">Юридическое лицо</button>
+      </div>
+    </div>
+
+    <!-- Service -->
+    <div class="card">
+      <h2>Услуга</h2>
+      <div class="service-grid" id="service-grid">
+        <div class="service-card active" data-service="Аренда бани" onclick="app.selectService(this)">Аренда бани</div>
+        <div class="service-card" data-service="Аренда дома" onclick="app.selectService(this)">Аренда дома</div>
+        <div class="service-card" data-service="Аренда шатра" onclick="app.selectService(this)">Аренда шатра</div>
+      </div>
+    </div>
+
+    <!-- Common fields -->
+    <div class="card">
+      <h2>Основные параметры</h2>
+      <div class="form-row one">
+        <div class="form-group">
+          <label>Номер договора</label>
+          <div class="contract-number-display" id="contract-number-display">—</div>
+          <div class="contract-number-label">будет сгенерирован автоматически</div>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label for="contract_date">Дата договора</label>
+          <input type="date" id="contract_date">
+        </div>
+        <div class="form-group">
+          <label for="contract_amount">Сумма договора (₽)</label>
+          <input type="number" id="contract_amount" step="0.01" min="0" placeholder="0.00">
+        </div>
+      </div>
+      <div class="checkbox-row">
+        <input type="checkbox" id="nds_enabled" onchange="app.toggleNDS()">
+        <label for="nds_enabled">НДС</label>
+      </div>
+      <div class="nds-field form-row one" id="nds-field">
+        <div class="form-group">
+          <label for="nds_percent">Ставка НДС (%)</label>
+          <input type="number" id="nds_percent" value="20" min="0" max="100" step="0.1">
+        </div>
+      </div>
+    </div>
+
+    <!-- Individual fields -->
+    <div class="card field-section" id="individual-fields">
+      <h2>Данные физического лица</h2>
+      <div class="form-row">
+        <div class="form-group">
+          <label for="full_name">ФИО полностью</label>
+          <input type="text" id="full_name" placeholder="Иванов Иван Иванович">
+        </div>
+        <div class="form-group">
+          <label for="passport_number">Серия и номер паспорта</label>
+          <input type="text" id="passport_number" placeholder="45 06 123456">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label for="passport_issue_date">Дата выдачи паспорта</label>
+          <input type="date" id="passport_issue_date">
+        </div>
+        <div class="form-group">
+          <label for="passport_issued_by">Кем выдан паспорт</label>
+          <input type="text" id="passport_issued_by" placeholder="Отделом УФМС России...">
+        </div>
+      </div>
+      <div class="form-row one">
+        <div class="form-group">
+          <label for="registration_address">Адрес регистрации</label>
+          <input type="text" id="registration_address" placeholder="г. Казань, ул. Пушкина, д. 1, кв. 1">
+        </div>
+      </div>
+    </div>
+
+    <!-- Legal entity fields -->
+    <div class="card field-section show" id="legal-fields">
+      <h2>Данные юридического лица</h2>
+      <div class="form-row one">
+        <div class="form-group">
+          <label for="company_name">Наименование организации</label>
+          <input type="text" id="company_name" placeholder="ООО «Ромашка»">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label for="inn">ИНН</label>
+          <input type="text" id="inn" placeholder="10 или 12 цифр">
+        </div>
+        <div class="form-group">
+          <label for="ogrn">ОГРН / ОГРНИП</label>
+          <input type="text" id="ogrn" placeholder="13 или 15 цифр">
+        </div>
+      </div>
+      <div class="form-row one">
+        <div class="form-group">
+          <label for="legal_address">Юридический адрес</label>
+          <input type="text" id="legal_address" placeholder="г. Казань, ул. Пушкина, д. 1">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label for="bank_account">Расчётный счёт</label>
+          <input type="text" id="bank_account" placeholder="40702810...">
+        </div>
+        <div class="form-group">
+          <label for="correspondent_account">Корреспондентский счёт</label>
+          <input type="text" id="correspondent_account" placeholder="30101810...">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label for="bik">БИК</label>
+          <input type="text" id="bik" placeholder="044525225">
+        </div>
+        <div class="form-group">
+          <label for="phone">Телефон</label>
+          <input type="text" id="phone" placeholder="+7 (999) 123-45-67">
+        </div>
+      </div>
+    </div>
+
+    <!-- Submit -->
+    <div class="card">
+      <div class="form-footer">
+        <button class="btn btn-primary" id="submit-btn" onclick="app.handleSubmit()">Сформировать договор</button>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- Progress overlay -->
+<div class="progress-overlay" id="progress-overlay">
+  <div class="spinner"></div>
+  <div class="progress-text" id="progress-text">Обработка...</div>
+</div>
+
+<!-- Status modal -->
+<div id="status-wrap">
+  <div id="status-box">
+    <div id="status-icon"></div>
+    <div id="status-title"></div>
+    <div id="status-text"></div>
+    <div id="status-actions"></div>
+  </div>
+</div>
+
+<script>
+(function() {
+  'use strict';
+
+  // ============================================================
+  // Application
+  // ============================================================
+  var app = window.app = {
+    auth: null,
+    config: null,
+    isProcessing: false,
+    guestType: 'legal',
+    service: 'Аренда бани'
+  };
+
+  // ============================================================
+  // BX24 wrappers
+  // ============================================================
+  function b24(method, params) {
+    return new Promise(function(resolve, reject) {
+      if (typeof BX24 === 'undefined') {
+        reject(new Error('BX24 не инициализирован. Запустите приложение в Битрикс24.'));
+        return;
+      }
+      BX24.callMethod(method, params, function(res) {
+        if (res.error()) {
+          reject(new Error(res.error().ex || res.error().error_description || 'Ошибка вызова API'));
+        } else {
+          resolve(res.data());
+        }
+      });
+    });
+  }
+
+  function restPost(endpoint, body) {
+    return new Promise(function(resolve, reject) {
+      var xhr = new XMLHttpRequest();
+      xhr.open('POST', endpoint, true);
+      xhr.onload = function() {
+        try {
+          var r = JSON.parse(xhr.responseText);
+          if (r.error) {
+            reject(new Error(r.error_description || r.error));
+          } else {
+            resolve(r.result);
+          }
+        } catch(e) {
+          reject(new Error('Ошибка обработки ответа'));
+        }
+      };
+      xhr.onerror = function() { reject(new Error('Ошибка сети')); };
+      xhr.send(body);
+    });
+  }
+
+  function uploadFile(folderId, blob, fileName) {
+    var formData = new FormData();
+    formData.append('id', folderId);
+    formData.append('data[NAME]', fileName);
+    formData.append('fileContent', blob, fileName);
+    var url = 'https://' + app.auth.domain + '/rest/disk.folder.uploadfile?auth=' + app.auth.access_token;
+    return restPost(url, formData);
+  }
+
+  function downloadFile(url) {
+    return fetch(url).then(function(r) {
+      if (!r.ok) throw new Error('Ошибка загрузки файла (HTTP ' + r.status + ')');
+      return r.arrayBuffer();
+    });
+  }
+
+  // ============================================================
+  // UI helpers
+  // ============================================================
+  function $(id) { return document.getElementById(id); }
+  function val(id) { var el = $(id); return el ? el.value : ''; }
+  function setVal(id, v) { var el = $(id); if (el) el.value = v; }
+
+  function showProgress(msg) {
+    $('progress-text').textContent = msg;
+    $('progress-overlay').classList.add('show');
+  }
+
+  function hideProgress() {
+    $('progress-overlay').classList.remove('show');
+  }
+
+  function showStatus(type, title, text, actions) {
+    var icons = { success: '✅', error: '❌', info: 'ℹ️', warning: '⚠️' };
+    $('status-icon').textContent = icons[type] || 'ℹ️';
+    $('status-title').textContent = title;
+    $('status-text').innerHTML = text;
+    var actionsEl = $('status-actions');
+    actionsEl.innerHTML = '';
+    if (actions) {
+      actions.forEach(function(a) {
+        var btn = document.createElement('button');
+        btn.className = 'btn ' + (a.cls || 'btn-secondary');
+        btn.textContent = a.text;
+        btn.onclick = function() {
+          $('status-wrap').classList.remove('show');
+          if (a.cb) a.cb();
+        };
+        actionsEl.appendChild(btn);
+      });
+    }
+    $('status-wrap').classList.add('show');
+  }
+
+  function showSuccess(title, text, actions) {
+    showStatus('success', title, text, actions);
+  }
+
+  function showError(title, text, actions) {
+    showStatus('error', title || 'Ошибка', text || 'Произошла непредвиденная ошибка.', actions || [{text:'Закрыть'}]);
+  }
+
+  function hideStatus() { $('status-wrap').classList.remove('show'); }
+
+  // ============================================================
+  // Date helpers
+  // ============================================================
+  function todayStr() {
+    var d = new Date();
+    return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+  }
+
+  function formatDateRu(d) {
+    if (!d) return '';
+    var parts = d.split('-');
+    if (parts.length !== 3) return d;
+    return parts[2] + '.' + parts[1] + '.' + parts[0];
+  }
+
+  function currentYear() { return String(new Date().getFullYear()); }
+
+  function monthYear() {
+    var d = new Date();
+    return String(d.getFullYear()) + String(d.getMonth()+1).padStart(2,'0');
+  }
+
+  // ============================================================
+  // App initialization
+  // ============================================================
+  app.init = function() {
+    if (typeof BX24 === 'undefined') {
+      showError('Ошибка инициализации', 'Библиотека BX24 не обнаружена. Приложение должно работать внутри Битрикс24.');
+      return;
+    }
+    BX24.init(function(auth) {
+      app.auth = auth;
+      app.loadConfig();
+    });
+  };
+
+  app.loadConfig = function() {
+    b24('app.option.get', {}).then(function(opts) {
+      opts = opts || {};
+      if (opts.group_id && opts.storage_id) {
+        app.config = {
+          groupId: opts.group_id,
+          storageId: opts.storage_id,
+          templateFolderId: opts.template_folder_id,
+          individualFolderId: opts.individual_folder_id,
+          legalFolderId: opts.legal_folder_id
+        };
+        $('config-info').textContent = 'Проект: ID ' + opts.group_id + ' | Хранилище настроено';
+        $('config-info').style.display = 'block';
+        $('setup-section').classList.remove('show');
+        $('form-section').classList.add('show');
+        app.setDefaultDate();
+      } else {
+        $('setup-section').classList.add('show');
+      }
+    }).catch(function() {
+      $('setup-section').classList.add('show');
+    });
+  };
+
+  app.setDefaultDate = function() {
+    if (!val('contract_date')) setVal('contract_date', todayStr());
+    app.generateNumber();
+  };
+
+  // ============================================================
+  // Setup
+  // ============================================================
+  app.setupGroup = function() {
+    var groupId = $('setup-group-id').value.trim();
+    if (!groupId) {
+      showError('Настройка', 'Укажите ID группы');
+      return;
+    }
+    $('setup-btn').disabled = true;
+    $('setup-btn').textContent = 'Настройка...';
+    showProgress('Поиск хранилища группы...');
+
+    b24('disk.storage.getlist', { filter: { ENTITY_TYPE: 'group', ENTITY_ID: groupId } })
+      .then(function(storages) {
+        if (!storages || storages.length === 0) {
+          throw new Error('Хранилище для группы не найдено. Проверьте ID группы.');
+        }
+        var storage = storages[0];
+        app.config = { groupId: groupId, storageId: storage.ID };
+        return app.setupFolders(storage.ROOT_OBJECT_ID);
+      })
+      .then(function() {
+        return b24('app.option.set', {
+          options: {
+            group_id: app.config.groupId,
+            storage_id: app.config.storageId,
+            template_folder_id: app.config.templateFolderId || '',
+            individual_folder_id: app.config.individualFolderId || '',
+            legal_folder_id: app.config.legalFolderId || ''
+          }
+        });
+      })
+      .then(function() {
+        hideProgress();
+        $('setup-btn').disabled = false;
+        $('setup-btn').textContent = 'Настроить';
+        showSuccess('Настройка завершена', 'Все папки найдены или созданы. Приложение готово к работе.', [
+          { text: 'Перейти к созданию договоров', cls: 'btn-primary', cb: function() { app.loadConfig(); } }
+        ]);
+      })
+      .catch(function(err) {
+        hideProgress();
+        $('setup-btn').disabled = false;
+        $('setup-btn').textContent = 'Настроить';
+        showError('Ошибка настройки', err.message || 'Не удалось настроить приложение.', [
+          { text: 'Повторить', cls: 'btn-primary', cb: function() { app.setupGroup(); } },
+          { text: 'Закрыть', cls: 'btn-secondary' }
+        ]);
+      });
+  };
+
+  app.setupFolders = function(rootId) {
+    showProgress('Поиск папки «Шаблоны договоров»...');
+    return app.findOrCreateFolder(rootId, 'Шаблоны договоров').then(function(tplFolder) {
+      app.config.templateFolderId = tplFolder.ID;
+      showProgress('Поиск папки «Договоры физические лица»...');
+      return app.findOrCreateFolder(rootId, 'Договоры физические лица');
+    }).then(function(indFolder) {
+      app.config.individualFolderId = indFolder.ID;
+      showProgress('Поиск папки «Договоры юридические лица»...');
+      return app.findOrCreateFolder(rootId, 'Договоры юридические лица');
+    }).then(function(legalFolder) {
+      app.config.legalFolderId = legalFolder.ID;
+    });
+  };
+
+  app.findOrCreateFolder = function(parentId, name) {
+    return b24('disk.folder.getchildren', { id: parentId }).then(function(children) {
+      var found = children.find(function(c) { return c.NAME === name && c.TYPE === 'folder'; });
+      if (found) return found;
+      return b24('disk.folder.addsubfolder', { id: parentId, data: { NAME: name } });
+    });
+  };
+
+  // ============================================================
+  // Toggles
+  // ============================================================
+  app.toggleGuestType = function(type) {
+    app.guestType = type;
+    var btns = document.querySelectorAll('#guest-toggle .toggle-btn');
+    btns.forEach(function(b) { b.classList.toggle('active', b.dataset.type === type); });
+    $('individual-fields').classList.toggle('show', type === 'individual');
+    $('legal-fields').classList.toggle('show', type === 'legal');
+  };
+
+  app.selectService = function(el) {
+    document.querySelectorAll('.service-card').forEach(function(c) { c.classList.remove('active'); });
+    el.classList.add('active');
+    app.service = el.dataset.service;
+  };
+
+  app.toggleNDS = function() {
+    $('nds-field').classList.toggle('show', $('nds_enabled').checked);
+  };
+
+  // ============================================================
+  // Contract number generation
+  // ============================================================
+  app.generateNumber = function() {
+    var prefix = monthYear();
+    b24('app.option.get', {}).then(function(opts) {
+      opts = opts || {};
+      var counter = parseInt(opts.contract_counter) || 0;
+      $('contract-number-display').textContent = prefix + '-' + String(counter + 1).padStart(4, '0');
+    }).catch(function() {
+      $('contract-number-display').textContent = prefix + '-????';
+    });
+  };
+
+  app.getNextContractNumber = function() {
+    return b24('app.option.get', {}).then(function(opts) {
+      opts = opts || {};
+      var counter = parseInt(opts.contract_counter) || 0;
+      var newCounter = counter + 1;
+      return b24('app.option.set', { options: { contract_counter: newCounter } }).then(function() {
+        return monthYear() + '-' + String(newCounter).padStart(4, '0');
+      }).catch(function() {
+        return monthYear() + '-' + String(newCounter).padStart(4, '0');
+      });
+    });
+  };
+
+  // ============================================================
+  // Form validation
+  // ============================================================
+  app.getFormData = function() {
+    var data = {};
+    data.contract_date = val('contract_date');
+    data.contract_number = $('contract-number-display').textContent;
+    data.service = app.service;
+    data.contract_amount = val('contract_amount');
+    data.nds_enabled = $('nds_enabled').checked;
+    data.nds_percent = data.nds_enabled ? parseFloat(val('nds_percent')) || 0 : 0;
+    data.guest_type = app.guestType;
+
+    if (app.guestType === 'individual') {
+      data.full_name = val('full_name');
+      data.passport_number = val('passport_number');
+      data.passport_issue_date = val('passport_issue_date');
+      data.passport_issued_by = val('passport_issued_by');
+      data.registration_address = val('registration_address');
+      // Legal fields empty
+      data.company_name = '';
+      data.inn = '';
+      data.ogrn = '';
+      data.legal_address = '';
+      data.bank_account = '';
+      data.correspondent_account = '';
+      data.bik = '';
+      data.phone = '';
+    } else {
+      data.company_name = val('company_name');
+      data.inn = val('inn');
+      data.ogrn = val('ogrn');
+      data.legal_address = val('legal_address');
+      data.bank_account = val('bank_account');
+      data.correspondent_account = val('correspondent_account');
+      data.bik = val('bik');
+      data.phone = val('phone');
+      // Individual fields empty
+      data.full_name = '';
+      data.passport_number = '';
+      data.passport_issue_date = '';
+      data.passport_issued_by = '';
+      data.registration_address = '';
+    }
+    return data;
+  };
+
+  app.validateForm = function(data) {
+    var errors = [];
+    if (!data.contract_date) errors.push('Укажите дату договора');
+    if (!data.contract_amount || parseFloat(data.contract_amount) <= 0) errors.push('Укажите сумму договора');
+
+    if (data.guestType === 'individual') {
+      if (!data.full_name) errors.push('Укажите ФИО');
+      if (!data.passport_number) errors.push('Укажите серию и номер паспорта');
+      if (!data.passport_issue_date) errors.push('Укажите дату выдачи паспорта');
+      if (!data.passport_issued_by) errors.push('Укажите кем выдан паспорт');
+      if (!data.registration_address) errors.push('Укажите адрес регистрации');
+    } else {
+      if (!data.company_name) errors.push('Укажите наименование организации');
+      if (!data.inn) errors.push('Укажите ИНН');
+      if (!data.ogrn) errors.push('Укажите ОГРН/ОГРНИП');
+      if (!data.legal_address) errors.push('Укажите юридический адрес');
+      if (!data.bank_account) errors.push('Укажите расчётный счёт');
+      if (!data.bik) errors.push('Укажите БИК');
+    }
+    return errors;
+  };
+
+  // ============================================================
+  // Placeholder generation
+  // ============================================================
+  app.buildPlaceholders = function(data) {
+    var amount = parseFloat(data.contract_amount) || 0;
+    var ndsPct = data.nds_percent || 0;
+    var ndsAmount = data.nds_enabled ? +(amount * ndsPct / 100).toFixed(2) : 0;
+    var totalWithNds = amount + ndsAmount;
+
+    var p = {
+      CONTRACT_NUMBER: data.contract_number,
+      CONTRACT_DATE: formatDateRu(data.contract_date),
+      SERVICE_NAME: data.service,
+      CONTRACT_AMOUNT: amount.toFixed(2).replace('.', ','),
+      NDS_ENABLED: data.nds_enabled ? 'Да' : 'Нет',
+      NDS_PERCENT: String(ndsPct),
+      NDS_AMOUNT: ndsAmount.toFixed(2).replace('.', ','),
+      AMOUNT_WITH_NDS: totalWithNds.toFixed(2).replace('.', ','),
+      CURRENT_DATE: formatDateRu(todayStr()),
+      CURRENT_YEAR: currentYear(),
+      GUEST_TYPE: data.guestType === 'legal' ? 'Юридическое лицо' : 'Физическое лицо',
+      // Individual
+      FULL_NAME: data.full_name || '',
+      PASSPORT_NUMBER: data.passport_number || '',
+      PASSPORT_ISSUE_DATE: formatDateRu(data.passport_issue_date),
+      PASSPORT_ISSUED_BY: data.passport_issued_by || '',
+      REGISTRATION_ADDRESS: data.registration_address || '',
+      // Legal
+      COMPANY_NAME: data.company_name || '',
+      INN: data.inn || '',
+      OGRN: data.ogrn || '',
+      LEGAL_ADDRESS: data.legal_address || '',
+      BANK_ACCOUNT: data.bank_account || '',
+      CORRESPONDENT_ACCOUNT: data.correspondent_account || '',
+      BIK: data.bik || '',
+      PHONE: data.phone || ''
+    };
+    return p;
+  };
+
+  // ============================================================
+  // DOCX processing
+  // ============================================================
+  app.findTemplateFile = function() {
+    showProgress('Поиск шаблона договора...');
+    var targetName = app.service + '.docx';
+    return b24('disk.folder.getchildren', { id: app.config.templateFolderId }).then(function(children) {
+      var file = children.find(function(c) { return c.TYPE === 'file' && (c.NAME === targetName || c.NAME.indexOf(app.service) !== -1); });
+      if (!file) {
+        throw new Error('Шаблон "' + targetName + '" не найден в папке "Шаблоны договоров". Проверьте название файла.');
+      }
+      return file;
+    });
+  };
+
+  app.downloadTemplate = function(fileId) {
+    showProgress('Загрузка шаблона...');
+    return b24('disk.file.get', { id: fileId }).then(function(fileInfo) {
+      if (!fileInfo.DOWNLOAD_URL) {
+        throw new Error('Не удалось получить ссылку для скачивания шаблона.');
+      }
+      return downloadFile(fileInfo.DOWNLOAD_URL);
+    });
+  };
+
+  app.processDocx = function(arrayBuffer, placeholders) {
+    showProgress('Обработка документа...');
+    return JSZip.loadAsync(arrayBuffer).then(function(zip) {
+      var filesToProcess = [];
+      zip.forEach(function(path, entry) {
+        if (path.indexOf('word/document.xml') === 0 ||
+            path.indexOf('word/header') === 0 ||
+            path.indexOf('word/footer') === 0) {
+          filesToProcess.push(path);
+        }
+      });
+      if (filesToProcess.length === 0) {
+        throw new Error('Не найден word/document.xml в шаблоне.');
+      }
+
+      var promises = filesToProcess.map(function(path) {
+        return zip.file(path).async('string').then(function(content) {
+          var result = content;
+          Object.keys(placeholders).forEach(function(key) {
+            var re = new RegExp('\\{' + key + '\\}', 'g');
+            result = result.replace(re, placeholders[key]);
+          });
+          zip.file(path, result);
+        });
+      });
+
+      return Promise.all(promises).then(function() {
+        return zip.generateAsync({ type: 'blob', mimeType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' });
+      });
+    });
+  };
+
+  app.getTargetFolder = function() {
+    var folderId;
+    if (app.guestType === 'individual') {
+      folderId = app.config.individualFolderId;
+    } else {
+      folderId = app.config.legalFolderId;
+    }
+    if (folderId) return Promise.resolve(folderId);
+    // Fallback: try to find/create
+    showProgress('Поиск целевой папки...');
+    return b24('disk.storage.getlist', { filter: { ENTITY_TYPE: 'group', ENTITY_ID: app.config.groupId } })
+      .then(function(storages) {
+        if (!storages || storages.length === 0) throw new Error('Хранилище группы не найдено');
+        var storage = storages[0];
+        var folderName = app.guestType === 'individual' ? 'Договоры физические лица' : 'Договоры юридические лица';
+        return app.findOrCreateFolder(storage.ROOT_OBJECT_ID, folderName);
+      })
+      .then(function(folder) {
+        var key = app.guestType === 'individual' ? 'individualFolderId' : 'legalFolderId';
+        app.config[key] = folder.ID;
+        b24('app.option.set', {
+          options: (function() { var o = {}; o[key] = folder.ID; return o; })()
+        }).catch(function() {});
+        return folder.ID;
+      });
+  };
+
+  app.uploadDocx = function(folderId, blob, fileName) {
+    showProgress('Загрузка готового договора...');
+    return uploadFile(folderId, blob, fileName);
+  };
+
+  app.createTask = function(fileInfo, contractNumber) {
+    showProgress('Создание задачи...');
+    var fileId = fileInfo.ID;
+    var fileLink = 'https://' + app.auth.domain + '/docs/' + fileId + '/';
+    var title = 'Нужен счет - ' + contractNumber;
+    var desc = 'По договору ' + fileLink + ' необходимо выставить счет.';
+
+    return b24('user.current', {}).then(function(user) {
+      var userId = user.ID || user.id;
+      return b24('tasks.task.add', {
+        fields: {
+          TITLE: title,
+          DESCRIPTION: desc,
+          RESPONSIBLE_ID: userId,
+          GROUP_ID: parseInt(app.config.groupId),
+          CREATED_BY: userId
+        }
+      });
+    }).then(function(task) {
+      return { taskId: task.task ? task.task.id : task.ID || task.id };
+    });
+  };
+
+  // ============================================================
+  // Main submit
+  // ============================================================
+  app.handleSubmit = function() {
+    if (app.isProcessing) return;
+    if (!app.config) {
+      showError('Не настроено', 'Выполните настройку приложения перед созданием договора.');
+      return;
+    }
+
+    var data = app.getFormData();
+    var errors = app.validateForm(data);
+    if (errors.length > 0) {
+      showError('Проверьте форму', errors.join('<br>'));
+      return;
+    }
+
+    app.isProcessing = true;
+    $('submit-btn').disabled = true;
+    $('submit-btn').textContent = 'Обработка...';
+
+    var contractNumber = '';
+
+    app.getNextContractNumber()
+      .then(function(num) {
+        contractNumber = num;
+        data.contract_number = contractNumber;
+        $('contract-number-display').textContent = contractNumber;
+        return app.findTemplateFile();
+      })
+      .then(function(tplFile) {
+        return app.downloadTemplate(tplFile.ID);
+      })
+      .then(function(arrayBuffer) {
+        var placeholders = app.buildPlaceholders(data);
+        return app.processDocx(arrayBuffer, placeholders);
+      })
+      .then(function(blob) {
+        var fileName = 'Договор_' + contractNumber + '_' + app.service + '.docx';
+        return app.getTargetFolder().then(function(folderId) {
+          return app.uploadDocx(folderId, blob, fileName).then(function(fileInfo) {
+            return { fileInfo: fileInfo, fileName: fileName };
+          });
+        });
+      })
+      .then(function(result) {
+        if (app.guestType === 'legal') {
+          return app.createTask(result.fileInfo, contractNumber).then(function(taskResult) {
+            result.task = taskResult;
+            return result;
+          });
+        }
+        return result;
+      })
+      .then(function(result) {
+        app.isProcessing = false;
+        $('submit-btn').disabled = false;
+        $('submit-btn').textContent = 'Сформировать договор';
+        hideProgress();
+
+        var fileId = result.fileInfo.ID;
+        var link = 'https://' + app.auth.domain + '/docs/' + fileId + '/';
+        var taskInfo = result.task ? '<br><br>Создана задача: <a href="https://' + app.auth.domain + '/company/personal/user/' + app.auth.user_id + '/tasks/task/view/' + result.task.taskId + '/" target="_blank">№' + result.task.taskId + '</a>' : '';
+
+        showSuccess('Договор создан!', 'Договор <strong>№' + contractNumber + '</strong> загружен в папку.<br><br>Ссылка: <a href="' + link + '" target="_blank">Открыть в Битрикс24</a>' + taskInfo, [
+          { text: 'Создать ещё', cls: 'btn-primary', cb: function() { app.resetForm(); } },
+          { text: 'Закрыть', cls: 'btn-secondary' }
+        ]);
+      })
+      .catch(function(err) {
+        app.isProcessing = false;
+        $('submit-btn').disabled = false;
+        $('submit-btn').textContent = 'Сформировать договор';
+        hideProgress();
+
+        var actions = [
+          { text: 'Повторить', cls: 'btn-primary', cb: function() { app.handleSubmit(); } },
+          { text: 'Закрыть', cls: 'btn-secondary' }
+        ];
+        showError('Ошибка', err.message || 'Неизвестная ошибка', actions);
+      });
+  };
+
+  // ============================================================
+  // Reset
+  // ============================================================
+  app.resetForm = function() {
+    hideStatus();
+    app.setDefaultDate();
+    setVal('contract_amount', '');
+    $('nds_enabled').checked = false;
+    app.toggleNDS();
+    setVal('nds_percent', '20');
+    // Clear individual fields
+    setVal('full_name', '');
+    setVal('passport_number', '');
+    setVal('passport_issue_date', '');
+    setVal('passport_issued_by', '');
+    setVal('registration_address', '');
+    // Clear legal fields
+    setVal('company_name', '');
+    setVal('inn', '');
+    setVal('ogrn', '');
+    setVal('legal_address', '');
+    setVal('bank_account', '');
+    setVal('correspondent_account', '');
+    setVal('bik', '');
+    setVal('phone', '');
+  };
+
+  // ============================================================
+  // Auto-init
+  // ============================================================
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', function() { app.init(); });
+  } else {
+    app.init();
+  }
+
+})();
+</script>
+</body>
+</html>

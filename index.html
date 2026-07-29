@@ -225,6 +225,12 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Oxygen,Ubunt
           <input type="text" id="registration_address" placeholder="г. Казань, ул. Пушкина, д. 1, кв. 1">
         </div>
       </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label for="phone">Телефон</label>
+          <input type="text" id="phone" placeholder="+7 (999) 123-45-67">
+        </div>
+      </div>
     </div>
 
     <!-- Legal entity fields -->
@@ -715,6 +721,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Oxygen,Ubunt
       data.passport_issue_date = val('passport_issue_date');
       data.passport_issued_by = val('passport_issued_by');
       data.registration_address = val('registration_address');
+      data.phone = val('phone');
       // Legal fields empty
       data.company_name = '';
       data.inn = '';
@@ -786,6 +793,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Oxygen,Ubunt
       'contact.passport_date': formatDateRu(data.passport_issue_date),
       'contact.passport_code': data.passport_code || '',
       'contact.passport_address': data.registration_address || '',
+      'contact.phone': data.phone || '',
       CONTRACT_DATE: formatDateRu(data.contract_date),
       SERVICE_NAME: data.service,
       CONTRACT_AMOUNT: amount.toFixed(2).replace('.', ','),
@@ -862,7 +870,22 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Oxygen,Ubunt
           var result = content;
           // Merge adjacent w:r elements to handle split placeholders
           result = result.replace(/(<w:p\b[^>]*>[\s\S]*?<\/w:p>)/g, function(para) {
-            return para.replace(/<\/w:r>\s*<w:r[^>]*>/g, '');
+            var runs = [];
+            para.replace(/<w:r\b[^>]*>[\s\S]*?<\/w:r>/g, function(run) { runs.push(run); });
+            if (runs.length < 2) return para;
+            var texts = runs.map(function(run) {
+              var t = '';
+              run.replace(/<w:t\b[^>]*>([\s\S]*?)<\/w:t>/g, function(m, c) { t += c; });
+              return t;
+            });
+            var merged = texts.join('');
+            var first = runs[0].replace(/(<w:t\b[^>]*>)[\s\S]*?(<\/w:t>)/, function(m, open, close) {
+              return open + merged + close;
+            });
+            var i = 0;
+            return para.replace(/<w:r\b[^>]*>[\s\S]*?<\/w:r>/g, function() {
+              return i++ === 0 ? first : '';
+            });
           });
           Object.keys(placeholders).forEach(function(key) {
             var re = new RegExp('\\$\\{' + key.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\}', 'g');

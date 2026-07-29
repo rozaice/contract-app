@@ -461,7 +461,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Oxygen,Ubunt
       });
       return;
     }
-    showError('Ошибка инициализации', 'Приложение должно работать внутри Битрикс24.');
+    var debugInfo = JSON.stringify({bx24: typeof BX24, auth: window.__BX_AUTH__});
+    showError('Ошибка инициализации', 'Приложение должно работать внутри Битрикс24.\n\nДанные отладки:\n' + debugInfo);
   };
 
   app.loadConfig = function() {

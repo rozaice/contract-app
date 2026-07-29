@@ -1,5 +1,12 @@
 {
+  "functions": {
+    "api/rest.js": {
+      "memory": 256,
+      "maxDuration": 30
+    }
+  },
   "routes": [
+    { "src": "/api/rest", "dest": "/api/rest", "methods": ["POST", "OPTIONS"] },
     { "src": "/(.*)", "dest": "/api/index", "methods": ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS", "HEAD"] }
   ]
 }

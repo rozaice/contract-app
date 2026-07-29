@@ -298,6 +298,21 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Oxygen,Ubunt
   // ============================================================
   // Bitrix24 REST API wrapper
   // ============================================================
+  function flattenParams(obj, prefix) {
+    var result = [];
+    prefix = prefix || '';
+    for (var key in obj) {
+      if (!obj.hasOwnProperty(key)) continue;
+      var fullKey = prefix ? prefix + '[' + key + ']' : key;
+      if (typeof obj[key] === 'object' && obj[key] !== null && !Array.isArray(obj[key])) {
+        result = result.concat(flattenParams(obj[key], fullKey));
+      } else {
+        result.push({ key: fullKey, value: obj[key] });
+      }
+    }
+    return result;
+  }
+
   function b24(method, params) {
     return new Promise(function(resolve, reject) {
       if (typeof BX24 !== 'undefined') {
@@ -313,10 +328,9 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Oxygen,Ubunt
         proxyBody.append('_method', method);
         proxyBody.append('_domain', app.auth.domain);
         proxyBody.append('_token', app.auth.access_token);
-        for (var key in params) {
-          if (params.hasOwnProperty(key)) {
-            proxyBody.append(key, typeof params[key] === 'object' ? JSON.stringify(params[key]) : params[key]);
-          }
+        var flat = flattenParams(params);
+        for (var i = 0; i < flat.length; i++) {
+          proxyBody.append(flat[i].key, flat[i].value);
         }
         var xhr = new XMLHttpRequest();
         xhr.open('POST', '/api/rest', true);

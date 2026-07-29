@@ -444,15 +444,18 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Oxygen,Ubunt
   // App initialization
   // ============================================================
   app.init = function() {
-    if (window.__BX_AUTH__ && window.__BX_AUTH__.domain && window.__BX_AUTH__.AUTH_ID) {
+    var auth = window.__BX_AUTH__ || {};
+    if (auth.DOMAIN || auth.domain) {
       app.auth = {
-        domain: window.__BX_AUTH__.domain,
-        access_token: window.__BX_AUTH__.AUTH_ID,
-        refresh_token: window.__BX_AUTH__.REFRESH_ID || '',
-        member_id: window.__BX_AUTH__.member_id || ''
+        domain: auth.DOMAIN || auth.domain || '',
+        access_token: auth.AUTH_ID || auth.access_token || '',
+        refresh_token: auth.REFRESH_ID || auth.refresh_token || '',
+        member_id: auth.member_id || ''
       };
-      app.loadConfig();
-      return;
+      if (app.auth.domain && app.auth.access_token) {
+        app.loadConfig();
+        return;
+      }
     }
     if (typeof BX24 !== 'undefined') {
       BX24.init(function(auth) {
@@ -461,8 +464,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Oxygen,Ubunt
       });
       return;
     }
-    var debugInfo = JSON.stringify({bx24: typeof BX24, auth: window.__BX_AUTH__});
-    showError('Ошибка инициализации', 'Приложение должно работать внутри Битрикс24.\n\nДанные отладки:\n' + debugInfo);
+    showError('Ошибка инициализации', 'Приложение должно работать внутри Битрикс24.');
   };
 
   app.loadConfig = function() {

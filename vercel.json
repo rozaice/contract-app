@@ -1,5 +1,5 @@
 {
   "routes": [
-    { "src": "/(.*)", "dest": "/index.html", "methods": ["GET", "POST", "PUT", "DELETE", "PATCH", "HEAD", "OPTIONS"] }
+    { "src": "/(.*)", "dest": "/api/index", "methods": ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS", "HEAD"] }
   ]
 }

@@ -86,14 +86,19 @@ module.exports = async (req, res) => {
     contentType = 'multipart/form-data; boundary=' + boundary;
 
     const parts = [];
-    for (const key of Object.keys(params)) {
-      parts.push(Buffer.from(
-        '--' + boundary + '\r\n' +
-        'Content-Disposition: form-data; name="' + key + '"\r\n\r\n' +
-        params[key] + '\r\n'
-      ));
-    }
-
+    // Auth as form field first (matching PHP approach)
+    parts.push(Buffer.from(
+      '--' + boundary + '\r\n' +
+      'Content-Disposition: form-data; name="auth"\r\n\r\n' +
+      accessToken + '\r\n'
+    ));
+    // id field
+    parts.push(Buffer.from(
+      '--' + boundary + '\r\n' +
+      'Content-Disposition: form-data; name="id"\r\n\r\n' +
+      (params.id || '') + '\r\n'
+    ));
+    // fileContent
     parts.push(Buffer.from(
       '--' + boundary + '\r\n' +
       'Content-Disposition: form-data; name="fileContent"; filename="' + fileName + '"\r\n' +

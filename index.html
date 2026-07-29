@@ -386,7 +386,6 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Oxygen,Ubunt
         body.append('_domain', app.auth.domain);
         body.append('_token', app.auth.access_token);
         body.append('id', folderId);
-        body.append('data[NAME]', fileName);
         body.append('_file_base64', base64);
         body.append('_file_name', fileName);
         var xhr = new XMLHttpRequest();
@@ -399,7 +398,10 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Oxygen,Ubunt
             else {
               var res = r.result;
               if (Array.isArray(res)) { res = res[0] || {}; }
-              if (res && typeof res === 'object' && !res.ID && res.id) { res.ID = res.id; }
+              if (res && typeof res === 'object') {
+                if (!res.ID && res.file) { res.ID = res.file.ID || res.file.id; }
+                if (!res.ID && res.id) { res.ID = res.id; }
+              }
               resolve(res || {});
             }
           } catch(e) { reject(new Error('Ошибка обработки ответа: ' + e.message)); }

@@ -784,11 +784,19 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Oxygen,Ubunt
   // ============================================================
   // DOCX processing
   // ============================================================
+  var TEMPLATE_MAP = {
+    'Аренда бани': 'Аренда бани',
+    'Аренда дома': 'Аренда домов',
+    'Аренда шатра': 'Аренда шатра'
+  };
+
   app.findTemplateFile = function() {
     showProgress('Поиск шаблона договора...');
-    var targetName = app.service + '.docx';
+    var base = TEMPLATE_MAP[app.service] || app.service;
+    var suffix = app.guestType === 'individual' ? 'физики' : 'юрики';
+    var targetName = base + ' ' + suffix + '.docx';
     return b24('disk.folder.getchildren', { id: app.config.templateFolderId }).then(function(children) {
-      var file = children.find(function(c) { return c.TYPE === 'file' && (c.NAME === targetName || c.NAME.indexOf(app.service) !== -1); });
+      var file = children.find(function(c) { return c.TYPE === 'file' && (c.NAME === targetName || c.NAME.indexOf(targetName.replace('.docx','')) !== -1); });
       if (!file) {
         throw new Error('Шаблон "' + targetName + '" не найден в папке "Шаблоны договоров". Проверьте название файла.');
       }

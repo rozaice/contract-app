@@ -396,8 +396,13 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Oxygen,Ubunt
           try {
             var r = JSON.parse(xhr.responseText);
             if (r.error) { reject(new Error(r.error_description || r.error)); }
-            else { resolve(r.result); }
-          } catch(e) { reject(new Error('Ошибка обработки ответа')); }
+            else {
+              var res = r.result;
+              if (Array.isArray(res)) { res = res[0] || {}; }
+              if (res && typeof res === 'object' && !res.ID && res.id) { res.ID = res.id; }
+              resolve(res || {});
+            }
+          } catch(e) { reject(new Error('Ошибка обработки ответа: ' + e.message)); }
         };
         xhr.onerror = function() { reject(new Error('Ошибка сети')); };
         xhr.send(body.toString());
@@ -961,11 +966,13 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Oxygen,Ubunt
         $('submit-btn').textContent = 'Сформировать договор';
         hideProgress();
 
-        var fileId = result.fileInfo.ID;
-        var link = 'https://' + app.auth.domain + '/docs/' + fileId + '/';
+        var fileInfo = result.fileInfo || {};
+        var fileId = fileInfo.ID || fileInfo.id || '';
+        var folderName = app.guestType === 'individual' ? 'Договоры физические лица' : 'Договоры юридические лица';
+        var link = fileId ? 'https://' + app.auth.domain + '/workgroups/group/' + app.config.groupId + '/disk/file/' + fileId + '/' : '';
         var taskInfo = result.task ? '<br><br>Создана задача: <a href="https://' + app.auth.domain + '/company/personal/user/' + app.auth.user_id + '/tasks/task/view/' + result.task.taskId + '/" target="_blank">№' + result.task.taskId + '</a>' : '';
 
-        showSuccess('Договор создан!', 'Договор <strong>№' + contractNumber + '</strong> загружен в папку.<br><br>Ссылка: <a href="' + link + '" target="_blank">Открыть в Битрикс24</a>' + taskInfo, [
+        showSuccess('Договор создан!', 'Договор <strong>№' + contractNumber + '</strong> загружен в папку «' + folderName + '»' + (link ? '.<br><br><a href="' + link + '" target="_blank">Открыть файл в Битрикс24</a>' : '.') + taskInfo, [
           { text: 'Создать ещё', cls: 'btn-primary', cb: function() { app.resetForm(); } },
           { text: 'Закрыть', cls: 'btn-secondary' }
         ]);

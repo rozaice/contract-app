@@ -952,7 +952,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Oxygen,Ubunt
   app.createTask = function(fileInfo, contractNumber) {
     showProgress('Создание задачи...');
     var fileId = fileInfo.ID;
-    var fileLink = 'https://' + app.auth.domain + '/workgroups/group/' + app.config.groupId + '/disk/file/' + fileId + '/';
+    var fileLink = 'https://' + app.auth.domain + '/bitrix/tools/disk/focus.php?objectId=' + fileId + '&cmd=show&action=showObjectInGrid&ncc=1';
     var title = 'Нужен счет - ' + contractNumber;
     var desc = 'По договору ' + fileLink + ' необходимо выставить счет.';
 

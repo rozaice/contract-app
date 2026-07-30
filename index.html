@@ -937,11 +937,11 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Oxygen,Ubunt
           b24('app.option.set', {
             options: (function() { var o = {}; o[key] = folder.ID; return o; })()
           }).catch(function() {});
-          mainFolderId = folder.ID;
-          return app.findOrCreateFolder(mainFolderId, app.service);
+           mainFolderId = folder.ID;
+          return app.findOrCreateFolder(mainFolderId, app.service).then(function(f) { return f.ID || f.id; });
         });
     }
-    return app.findOrCreateFolder(mainFolderId, app.service);
+    return app.findOrCreateFolder(mainFolderId, app.service).then(function(f) { return f.ID || f.id; });
   };
 
   app.uploadDocx = function(folderId, blob, fileName) {

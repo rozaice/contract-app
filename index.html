@@ -258,6 +258,12 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Oxygen,Ubunt
           <input type="text" id="legal_address" placeholder="г. Казань, ул. Пушкина, д. 1">
         </div>
       </div>
+      <div class="form-row one">
+        <div class="form-group">
+          <label for="bank_name">Наименование банка</label>
+          <input type="text" id="bank_name" placeholder="ПАО Сбербанк">
+        </div>
+      </div>
       <div class="form-row">
         <div class="form-group">
           <label for="bank_account">Расчётный счёт</label>
@@ -736,6 +742,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Oxygen,Ubunt
       data.inn = val('inn');
       data.ogrn = val('ogrn');
       data.legal_address = val('legal_address');
+      data.bank_name = val('bank_name');
       data.bank_account = val('bank_account');
       data.correspondent_account = val('correspondent_account');
       data.bik = val('bik');
@@ -784,7 +791,6 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Oxygen,Ubunt
 
     var p = {
       'npp': data.contract_number,
-      'contact.lastname': data.last_name || '',
       'contact.firstname': data.first_name || '',
       'contact.secondname': data.second_name || '',
       'userfield1': formatDateRu(data.birth_date),
@@ -796,7 +802,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Oxygen,Ubunt
       'contact.phone': data.phone || '',
       CONTRACT_DATE: formatDateRu(data.contract_date),
       SERVICE_NAME: data.service,
-      CONTRACT_AMOUNT: amount.toFixed(2).replace('.', ','),
+      'price': amount.toFixed(2).replace('.', ','),
       NDS_ENABLED: data.nds_enabled ? 'Да' : 'Нет',
       NDS_PERCENT: String(ndsPct),
       NDS_AMOUNT: ndsAmount.toFixed(2).replace('.', ','),
@@ -807,13 +813,20 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Oxygen,Ubunt
       COMPANY_NAME: data.company_name || '',
       INN: data.inn || '',
       OGRN: data.ogrn || '',
-      LEGAL_ADDRESS: data.legal_address || '',
-      BANK_ACCOUNT: data.bank_account || '',
-      CORRESPONDENT_ACCOUNT: data.correspondent_account || '',
+      'addressu': data.legal_address || '',
+      'bankname': data.bank_name || '',
+      'rsch': data.bank_account || '',
+      'ksch': data.correspondent_account || '',
       BIK: data.bik || '',
       PHONE: data.phone || '',
       FULL_NAME: (data.last_name || '') + ' ' + (data.first_name || '') + ' ' + (data.second_name || '')
     };
+    // guest-type-specific aliases
+    if (data.guestType === 'legal') {
+      p['contact.lastname'] = data.company_name || '';
+    } else {
+      p['contact.lastname'] = data.last_name || '';
+    }
     return p;
   };
 
@@ -1068,6 +1081,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Oxygen,Ubunt
     setVal('inn', '');
     setVal('ogrn', '');
     setVal('legal_address', '');
+    setVal('bank_name', '');
     setVal('bank_account', '');
     setVal('correspondent_account', '');
     setVal('bik', '');

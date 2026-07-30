@@ -1013,7 +1013,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Oxygen,Ubunt
         var fileName = 'Договор_' + contractNumber + '_' + app.service + '.docx';
         return app.getTargetFolder().then(function(folderId) {
           return app.uploadDocx(folderId, blob, fileName).then(function(fileInfo) {
-            return { fileInfo: fileInfo, fileName: fileName };
+            return { fileInfo: fileInfo, fileName: fileName, folderId: folderId };
           });
         });
       })
@@ -1036,8 +1036,9 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Oxygen,Ubunt
         var folderName = (app.guestType === 'individual' ? 'Договоры физические лица' : 'Договоры юридические лица') + ' / ' + app.service;
         var link = 'https://' + app.auth.domain + '/workgroups/group/' + app.config.groupId + '/disk/path/' + encodeURIComponent(app.guestType === 'individual' ? 'Договоры физические лица' : 'Договоры юридические лица') + '/' + encodeURIComponent(app.service) + '/';
         var taskInfo = result.task ? '<br><br>Создана задача: <a href="https://' + app.auth.domain + '/company/personal/user/' + app.auth.user_id + '/tasks/task/view/' + result.task.taskId + '/" target="_blank">№' + result.task.taskId + '</a>' : '';
+        var debugInfo = '<br><br><small>folderId=' + (result.folderId || '?') + ' | fileId=' + (fileInfo.ID || fileInfo.id || '?') + '</small>';
 
-        showSuccess('Договор создан!', 'Договор <strong>№' + contractNumber + '</strong> загружен в папку «' + folderName + '»' + (link ? '.<br><br><a href="' + link + '" target="_blank">Открыть файл в Битрикс24</a>' : '.') + taskInfo, [
+        showSuccess('Договор создан!', 'Договор <strong>№' + contractNumber + '</strong> загружен в папку «' + folderName + '»' + (link ? '.<br><br><a href="' + link + '" target="_blank">Открыть папку в Битрикс24</a>' : '.') + taskInfo + debugInfo, [
           { text: 'Создать ещё', cls: 'btn-primary', cb: function() { app.resetForm(); } },
           { text: 'Закрыть', cls: 'btn-secondary' }
         ]);

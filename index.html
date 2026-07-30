@@ -952,7 +952,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Oxygen,Ubunt
   app.createTask = function(fileInfo, contractNumber) {
     showProgress('Создание задачи...');
     var fileId = fileInfo.ID;
-    var fileLink = 'https://' + app.auth.domain + '/docs/' + fileId + '/';
+    var fileLink = 'https://' + app.auth.domain + '/workgroups/group/' + app.config.groupId + '/disk/file/' + fileId + '/';
     var title = 'Нужен счет - ' + contractNumber;
     var desc = 'По договору ' + fileLink + ' необходимо выставить счет.';
 

@@ -10,6 +10,7 @@
     }
   },
   "routes": [
+    { "src": "/api/install", "dest": "/api/install", "methods": ["GET", "POST"] },
     { "src": "/api/rest", "dest": "/api/rest", "methods": ["POST", "OPTIONS"] },
     { "src": "/api/rest-upload", "dest": "/api/rest-upload", "methods": ["POST", "OPTIONS"] },
     { "src": "/(.*)", "dest": "/api/index", "methods": ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS", "HEAD"] }

@@ -313,9 +313,20 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Oxygen,Ubunt
   </div>
 </div>
 
+<!-- Debug log -->
+<div id="debug-log" style="display:none;position:fixed;left:8px;bottom:8px;right:8px;max-height:40vh;overflow:auto;background:rgba(0,0,0,.85);color:#0f0;font:11px/1.4 monospace;padding:8px 10px;z-index:2000;border-radius:6px;white-space:pre-wrap"></div>
+
 <script>
 (function() {
   'use strict';
+
+  function dbg(msg) {
+    var el = document.getElementById('debug-log');
+    if (!el) return;
+    el.style.display = 'block';
+    el.textContent += new Date().toISOString().slice(11, 19) + ' ' + msg + '\n';
+    el.scrollTop = el.scrollHeight;
+  }
 
   // ============================================================
   // Application
@@ -347,6 +358,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Oxygen,Ubunt
   }
 
   function b24(method, params) {
+    dbg('b24: ' + method + ' via proxy, domain=' + (app.auth && app.auth.domain || 'none'));
     return new Promise(function(resolve, reject) {
       if (app.auth && app.auth.domain && app.auth.access_token) {
         var proxyBody = new URLSearchParams();
@@ -360,21 +372,26 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Oxygen,Ubunt
         var xhr = new XMLHttpRequest();
         xhr.open('POST', '/api/rest', true);
         xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+        xhr.timeout = 60000;
         xhr.onload = function() {
           try {
             var r = JSON.parse(xhr.responseText);
+            dbg('b24: ' + method + ' -> ' + (r.error ? ('ERR ' + r.error_description) : 'ok'));
             if (r.error) {
               reject(new Error(r.error_description || r.error));
             } else {
               resolve(r.result);
             }
           } catch(e) {
+            dbg('b24: ' + method + ' parse error');
             reject(new Error('Ошибка обработки ответа'));
           }
         };
-        xhr.onerror = function() { reject(new Error('Ошибка сети')); };
+        xhr.ontimeout = function() { dbg('b24: ' + method + ' network timeout'); reject(new Error('Ошибка сети')); };
+        xhr.onerror = function() { dbg('b24: ' + method + ' network error'); reject(new Error('Ошибка сети')); };
         xhr.send(proxyBody.toString());
       } else if (typeof BX24 !== 'undefined') {
+        dbg('b24: ' + method + ' via BX24.callMethod');
         BX24.callMethod(method, params, function(res) {
           if (res.error()) {
             reject(new Error(res.error().ex || res.error().error_description || 'Ошибка вызова API'));
@@ -383,6 +400,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Oxygen,Ubunt
           }
         });
       } else {
+        dbg('b24: ' + method + ' no auth available');
         reject(new Error('Не удалось авторизоваться в Битрикс24.'));
       }
     });
@@ -531,6 +549,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Oxygen,Ubunt
   // ============================================================
   app.init = function() {
     var auth = window.__BX_AUTH__ || {};
+    dbg('init: __BX_AUTH__ keys=' + Object.keys(auth).join(',') + ' domain=' + (auth.DOMAIN || auth.domain || ''));
     if (auth.DOMAIN || auth.domain) {
       app.auth = {
         domain: auth.DOMAIN || auth.domain || '',
@@ -539,20 +558,25 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Oxygen,Ubunt
         member_id: auth.member_id || ''
       };
       if (app.auth.domain && app.auth.access_token) {
+        dbg('init: auth from URL params, loadConfig');
         app.loadConfig();
         return;
       }
+      dbg('init: domain present but no access_token');
     }
     if (typeof BX24 !== 'undefined') {
+      dbg('init: BX24.init waiting for parent...');
       var authDone = false;
       var authTimeout = setTimeout(function() {
         if (!authDone) {
+          dbg('init: BX24.init TIMEOUT after 8s');
           showError('Ошибка авторизации', 'Не удалось получить данные авторизации из Битрикс24. Откройте приложение через меню Битрикс24 (в слайдере), а не в отдельной вкладке.');
         }
       }, 8000);
       BX24.init(function(auth) {
         authDone = true;
         clearTimeout(authTimeout);
+        dbg('init: BX24.init callback, domain=' + (auth.DOMAIN || auth.domain || '') + ' authId=' + (auth.AUTH_ID ? 'yes' : 'no'));
         app.auth = {
           domain: auth.DOMAIN || auth.domain || '',
           access_token: auth.AUTH_ID || auth.access_token || auth.auth_token || '',
@@ -564,11 +588,24 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Oxygen,Ubunt
       });
       return;
     }
+    dbg('init: BX24 not defined');
     showError('Ошибка инициализации', 'Приложение должно работать внутри Битрикс24.');
   };
 
   app.loadConfig = function() {
+    dbg('loadConfig: calling app.option.get');
+    var settled = false;
+    var t = setTimeout(function() {
+      if (!settled) {
+        settled = true;
+        dbg('loadConfig: TIMEOUT 25s, showing setup');
+        $('setup-section').classList.add('show');
+      }
+    }, 25000);
     b24('app.option.get', {}).then(function(opts) {
+      settled = true;
+      clearTimeout(t);
+      dbg('loadConfig: ok, keys=' + (opts ? Object.keys(opts).join(',') : 'none'));
       opts = opts || {};
       if (opts.group_id && opts.storage_id) {
         app.config = {
@@ -587,7 +624,12 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Oxygen,Ubunt
       } else {
         $('setup-section').classList.add('show');
       }
-    }).catch(function() {
+    }).catch(function(err) {
+      if (!settled) {
+        settled = true;
+        clearTimeout(t);
+      }
+      dbg('loadConfig: ERROR ' + (err && err.message ? err.message : err));
       $('setup-section').classList.add('show');
     });
   };

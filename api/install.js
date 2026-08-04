@@ -28,13 +28,14 @@ module.exports = async (req, res) => {
   if (accept.includes('text/html') || accept.includes('application/xhtml+xml')) {
     const scheme = (req.headers['x-forwarded-proto'] || 'https').split(',')[0].trim();
     const host = req.headers['x-forwarded-host'] || req.headers.host;
+    const base = scheme + '://' + host + '/';
     res.setHeader('Content-Type', 'text/html; charset=utf-8');
     res.status(200).send(
       '<!DOCTYPE html><html lang="ru"><head><meta charset="utf-8">' +
-      '<meta http-equiv="refresh" content="0;url=' + scheme + '://' + host + '/">' +
+      '<meta http-equiv="refresh" content="0;url=' + base + '">' +
       '<title>Установка приложения</title></head>' +
       '<body><p>Переход в приложение...</p>' +
-      '<script>window.location.replace("' + scheme + '://' + host + '/");</script>' +
+      '<script>window.location.replace("' + base + '" + window.location.search);</script>' +
       '</body></html>'
     );
     return;

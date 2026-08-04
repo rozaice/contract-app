@@ -544,7 +544,15 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Oxygen,Ubunt
       }
     }
     if (typeof BX24 !== 'undefined') {
+      var authDone = false;
+      var authTimeout = setTimeout(function() {
+        if (!authDone) {
+          showError('Ошибка авторизации', 'Не удалось получить данные авторизации из Битрикс24. Откройте приложение через меню Битрикс24 (в слайдере), а не в отдельной вкладке.');
+        }
+      }, 8000);
       BX24.init(function(auth) {
+        authDone = true;
+        clearTimeout(authTimeout);
         app.auth = {
           domain: auth.DOMAIN || auth.domain || '',
           access_token: auth.AUTH_ID || auth.access_token || auth.auth_token || '',

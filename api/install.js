@@ -34,13 +34,22 @@ module.exports = async (req, res) => {
     receivedKeys: Object.keys(params)
   }));
 
-  if (!domain && !authToken) {
-    res.setHeader('Content-Type', 'text/plain; charset=utf-8');
-    res.status(400).send('Missing install parameters');
+  const scheme = (req.headers['x-forwarded-proto'] || 'https').split(',')[0].trim();
+  const host = req.headers['x-forwarded-host'] || req.headers.host;
+  const redirectUrl = scheme + '://' + host + '/';
+
+  if (!domain || !authToken) {
+    res.setHeader('Content-Type', 'application/json; charset=utf-8');
+    res.status(400).json({
+      error: 'invalid request',
+      error_description: 'missed params domain or auth_token'
+    });
     return;
   }
 
-  const scheme = (req.headers['x-forwarded-proto'] || 'https').split(',')[0].trim();
-  const host = req.headers['x-forwarded-host'] || req.headers.host;
-  res.redirect(302, scheme + '://' + host + '/');
+  res.setHeader('Content-Type', 'application/json; charset=utf-8');
+  res.status(200).json({
+    result: 'ok',
+    redirect_url: redirectUrl
+  });
 };

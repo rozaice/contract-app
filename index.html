@@ -54,6 +54,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Oxygen,Ubunt
 .form-footer{display:flex;justify-content:flex-end;gap:12px;margin-top:20px;padding-top:16px;border-top:1px solid #eee}
 .field-section{display:none}
 .field-section.show{display:block}
+#contract-params.hide{display:none}
 .section-divider{height:1px;background:#eee;margin:16px 0}
 
 /* Status */
@@ -135,6 +136,15 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Oxygen,Ubunt
       </div>
     </div>
 
+    <!-- Document type -->
+    <div class="card">
+      <h2>Тип документа</h2>
+      <div class="toggle-group" id="doc-type-toggle">
+        <button class="toggle-btn active" data-type="contract" onclick="app.toggleDocType('contract')">Договор</button>
+        <button class="toggle-btn" data-type="booking" onclick="app.toggleDocType('booking')">Заявка на бронирование</button>
+      </div>
+    </div>
+
     <!-- Service -->
     <div class="card">
       <h2>Услуга</h2>
@@ -146,7 +156,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Oxygen,Ubunt
     </div>
 
     <!-- Common fields -->
-    <div class="card">
+    <div class="card" id="contract-params">
       <h2>Основные параметры</h2>
       <div class="form-row one">
         <div class="form-group">
@@ -173,6 +183,39 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Oxygen,Ubunt
         <div class="form-group">
           <label for="nds_percent">Ставка НДС (%)</label>
           <input type="number" id="nds_percent" value="20" min="0" max="100" step="0.1">
+        </div>
+      </div>
+    </div>
+
+    <!-- Booking fields -->
+    <div class="card field-section" id="booking-params">
+      <h2>Данные бронирования</h2>
+      <div class="form-row">
+        <div class="form-group">
+          <label for="br_date">Дата бронирования</label>
+          <input type="date" id="br_date">
+        </div>
+        <div class="form-group">
+          <label for="br_checkin">Дата заезда</label>
+          <input type="date" id="br_checkin" onchange="app.calcNights()">
+        </div>
+        <div class="form-group">
+          <label for="br_checkout">Дата выезда</label>
+          <input type="date" id="br_checkout" onchange="app.calcNights()">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label for="br_nights">Количество ночей</label>
+          <input type="number" id="br_nights" min="1" readonly>
+        </div>
+        <div class="form-group">
+          <label for="br_main_places">Основные места</label>
+          <input type="number" id="br_main_places" min="1" placeholder="1">
+        </div>
+        <div class="form-group">
+          <label for="br_extra_places">Дополнительные места</label>
+          <input type="number" id="br_extra_places" min="0" placeholder="0">
         </div>
       </div>
     </div>
@@ -249,6 +292,10 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Oxygen,Ubunt
           <input type="text" id="inn" placeholder="10 или 12 цифр">
         </div>
         <div class="form-group">
+          <label for="kpp">КПП</label>
+          <input type="text" id="kpp" placeholder="9 цифр">
+        </div>
+        <div class="form-group">
           <label for="ogrn">ОГРН / ОГРНИП</label>
           <input type="text" id="ogrn" placeholder="13 или 15 цифр">
         </div>
@@ -257,6 +304,22 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Oxygen,Ubunt
         <div class="form-group">
           <label for="legal_address">Юридический адрес</label>
           <input type="text" id="legal_address" placeholder="г. Казань, ул. Пушкина, д. 1">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label for="client_position">Должность руководителя</label>
+          <input type="text" id="client_position" placeholder="Генеральный директор">
+        </div>
+        <div class="form-group">
+          <label for="client_fullname">ФИО руководителя</label>
+          <input type="text" id="client_fullname" placeholder="Иванов Иван Иванович">
+        </div>
+      </div>
+      <div class="form-row one">
+        <div class="form-group">
+          <label for="client_doc">Действует на основании</label>
+          <input type="text" id="client_doc" placeholder="Устава">
         </div>
       </div>
       <div class="form-row one">
@@ -325,6 +388,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Oxygen,Ubunt
     config: null,
     isProcessing: false,
     guestType: 'legal',
+    docType: 'contract',
     service: 'Аренда бани'
   };
 
@@ -619,6 +683,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Oxygen,Ubunt
 
   app.setDefaultDate = function() {
     if (!val('contract_date')) setVal('contract_date', todayStr());
+    if (!val('br_date')) setVal('br_date', todayStr());
     app.generateNumber();
   };
 
@@ -719,6 +784,27 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Oxygen,Ubunt
     $('nds-field').classList.toggle('show', $('nds_enabled').checked);
   };
 
+  app.toggleDocType = function(type) {
+    app.docType = type;
+    var btns = document.querySelectorAll('#doc-type-toggle .toggle-btn');
+    btns.forEach(function(b) { b.classList.toggle('active', b.dataset.type === type); });
+    $('contract-params').classList.toggle('hide', type !== 'contract');
+    $('booking-params').classList.toggle('show', type === 'booking');
+    $('submit-btn').textContent = type === 'booking' ? 'Сформировать заявку' : 'Сформировать договор';
+    if (type === 'booking' && !val('br_date')) setVal('br_date', todayStr());
+  };
+
+  app.calcNights = function() {
+    var ci = val('br_checkin');
+    var co = val('br_checkout');
+    if (ci && co) {
+      var days = Math.round((new Date(co + 'T00:00:00') - new Date(ci + 'T00:00:00')) / 86400000);
+      setVal('br_nights', days > 0 ? String(days) : '');
+    } else {
+      setVal('br_nights', '');
+    }
+  };
+
   // ============================================================
   // Contract number generation
   // ============================================================
@@ -751,6 +837,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Oxygen,Ubunt
   // ============================================================
   app.getFormData = function() {
     var data = {};
+    data.docType = app.docType;
     data.contract_date = val('contract_date');
     data.contract_number = $('contract-number-display').textContent;
     data.service = app.service;
@@ -758,6 +845,13 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Oxygen,Ubunt
     data.nds_enabled = $('nds_enabled').checked;
     data.nds_percent = data.nds_enabled ? parseFloat(val('nds_percent')) || 0 : 0;
     data.guestType = app.guestType;
+
+    data.br_date = val('br_date');
+    data.br_checkin = val('br_checkin');
+    data.br_checkout = val('br_checkout');
+    data.br_nights = val('br_nights');
+    data.br_main_places = val('br_main_places');
+    data.br_extra_places = val('br_extra_places');
 
     if (app.guestType === 'individual') {
       data.last_name = val('last_name');
@@ -773,15 +867,20 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Oxygen,Ubunt
       // Legal fields empty
       data.company_name = '';
       data.inn = '';
+      data.kpp = '';
       data.ogrn = '';
       data.legal_address = '';
+      data.bank_name = '';
       data.bank_account = '';
       data.correspondent_account = '';
       data.bik = '';
-      data.phone = '';
+      data.client_position = '';
+      data.client_fullname = '';
+      data.client_doc = '';
     } else {
       data.company_name = val('company_name');
       data.inn = val('inn');
+      data.kpp = val('kpp');
       data.ogrn = val('ogrn');
       data.legal_address = val('legal_address');
       data.bank_name = val('bank_name');
@@ -789,6 +888,9 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Oxygen,Ubunt
       data.correspondent_account = val('correspondent_account');
       data.bik = val('bik');
       data.phone = val('phone');
+      data.client_position = val('client_position');
+      data.client_fullname = val('client_fullname');
+      data.client_doc = val('client_doc');
       // Individual fields empty
       data.full_name = '';
       data.passport_number = '';
@@ -801,8 +903,16 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Oxygen,Ubunt
 
   app.validateForm = function(data) {
     var errors = [];
-    if (!data.contract_date) errors.push('Укажите дату договора');
-    if (!data.contract_amount || parseFloat(data.contract_amount) <= 0) errors.push('Укажите сумму договора');
+    if (data.docType === 'booking') {
+      if (!data.br_date) errors.push('Укажите дату бронирования');
+      if (!data.br_checkin) errors.push('Укажите дату заезда');
+      if (!data.br_checkout) errors.push('Укажите дату выезда');
+      if (!data.br_nights || parseInt(data.br_nights, 10) <= 0) errors.push('Количество ночей должно быть больше 0');
+      if (!data.br_main_places || parseInt(data.br_main_places, 10) <= 0) errors.push('Укажите количество основных мест');
+    } else {
+      if (!data.contract_date) errors.push('Укажите дату договора');
+      if (!data.contract_amount || parseFloat(data.contract_amount) <= 0) errors.push('Укажите сумму договора');
+    }
 
     if (data.guestType === 'individual') {
       if (!data.last_name) errors.push('Укажите фамилию');
@@ -833,6 +943,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Oxygen,Ubunt
 
     var p = {
       'npp': data.contract_number,
+      'date': formatDateRu(todayStr()),
       'contact.firstname': data.first_name || '',
       'contact.secondname': data.second_name || '',
       'userfield1': formatDateRu(data.birth_date),
@@ -842,6 +953,24 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Oxygen,Ubunt
       'contact.passport_code': data.passport_code || '',
       'contact.passport_address': data.registration_address || '',
       'contact.phone': data.phone || '',
+      'datebr': formatDateRu(data.br_date),
+      'datezaezd': formatDateRu(data.br_checkin),
+      'dateviezd': formatDateRu(data.br_checkout),
+      'noch': data.br_nights || '',
+      'osnmesta': data.br_main_places || '',
+      'dopmesta': data.br_extra_places || '',
+      'client_legal_name': data.company_name || '',
+      'client_position': data.client_position || '',
+      'client_fullname': data.client_fullname || '',
+      'client_doc': data.client_doc || '',
+      'client_inn': data.inn || '',
+      'client_kpp': data.kpp || '',
+      'client_ogrn': data.ogrn || '',
+      'client_address': data.legal_address || '',
+      'client_account': data.bank_account || '',
+      'client_bank_name': data.bank_name || '',
+      'client_bik': data.bik || '',
+      'client_kor_account': data.correspondent_account || '',
       CONTRACT_DATE: formatDateRu(data.contract_date),
       SERVICE_NAME: data.service,
       'price': amount.toFixed(2).replace('.', ','),
@@ -882,8 +1011,13 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Oxygen,Ubunt
   };
 
   app.findTemplateFile = function() {
-    showProgress('Поиск шаблона договора...');
-    var base = TEMPLATE_MAP[app.service] || app.service;
+    showProgress('Поиск шаблона документа...');
+    var base;
+    if (app.docType === 'booking') {
+      base = 'Заявка на бронирование';
+    } else {
+      base = TEMPLATE_MAP[app.service] || app.service;
+    }
     var suffix = app.guestType === 'individual' ? 'физики' : 'юрики';
     var targetName = base + ' ' + suffix + '.docx';
     return b24('disk.folder.getchildren', { id: app.config.templateFolderId }).then(function(children) {
@@ -1035,6 +1169,11 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Oxygen,Ubunt
     $('submit-btn').disabled = true;
     $('submit-btn').textContent = 'Обработка...';
 
+    if (app.docType === 'booking') {
+      app.submitBooking(data);
+      return;
+    }
+
     var contractNumber = '';
 
     app.getNextContractNumber()
@@ -1099,6 +1238,53 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Oxygen,Ubunt
       });
   };
 
+  app.submitBooking = function(data) {
+    var datePart = (data.br_date || todayStr()).replace(/-/g, '.');
+    var fileName = 'Заявка_на_бронирование_' + datePart + '_' + app.service + '.docx';
+
+    app.findTemplateFile()
+      .then(function(tplFile) {
+        return app.downloadTemplate(tplFile.ID);
+      })
+      .then(function(arrayBuffer) {
+        var placeholders = app.buildPlaceholders(data);
+        return app.processDocx(arrayBuffer, placeholders);
+      })
+      .then(function(blob) {
+        return app.getTargetFolder().then(function(folderId) {
+          return app.uploadDocx(folderId, blob, fileName).then(function(fileInfo) {
+            return { fileInfo: fileInfo, fileName: fileName, folderId: folderId };
+          });
+        });
+      })
+      .then(function(result) {
+        app.isProcessing = false;
+        $('submit-btn').disabled = false;
+        $('submit-btn').textContent = 'Сформировать заявку';
+        hideProgress();
+
+        var fileInfo = result.fileInfo || {};
+        var folderName = (app.guestType === 'individual' ? 'Договоры физические лица' : 'Договоры юридические лица') + ' / ' + app.service;
+        var link = 'https://' + app.auth.domain + '/workgroups/group/' + app.config.groupId + '/disk/path/' + encodeURIComponent(app.guestType === 'individual' ? 'Договоры физические лица' : 'Договоры юридические лица') + '/' + encodeURIComponent(app.service) + '/';
+        var debugInfo = '<br><br><small>folderId=' + (result.folderId || '?') + ' | fileId=' + (fileInfo.ID || fileInfo.id || '?') + '</small>';
+
+        showSuccess('Заявка создана!', 'Заявка загружена в папку «' + folderName + '».<br><br><a href="' + link + '" target="_blank">Открыть папку в Битрикс24</a>' + debugInfo, [
+          { text: 'Создать ещё', cls: 'btn-primary', cb: function() { app.resetForm(); } },
+          { text: 'Закрыть', cls: 'btn-secondary' }
+        ]);
+      })
+      .catch(function(err) {
+        app.isProcessing = false;
+        $('submit-btn').disabled = false;
+        $('submit-btn').textContent = 'Сформировать заявку';
+        hideProgress();
+        showError('Ошибка', err.message || 'Неизвестная ошибка', [
+          { text: 'Повторить', cls: 'btn-primary', cb: function() { app.handleSubmit(); } },
+          { text: 'Закрыть', cls: 'btn-secondary' }
+        ]);
+      });
+  };
+
   // ============================================================
   // Reset
   // ============================================================
@@ -1122,6 +1308,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Oxygen,Ubunt
     // Clear legal fields
     setVal('company_name', '');
     setVal('inn', '');
+    setVal('kpp', '');
     setVal('ogrn', '');
     setVal('legal_address', '');
     setVal('bank_name', '');
@@ -1129,6 +1316,17 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Oxygen,Ubunt
     setVal('correspondent_account', '');
     setVal('bik', '');
     setVal('phone', '');
+    setVal('client_position', '');
+    setVal('client_fullname', '');
+    setVal('client_doc', '');
+    // Clear booking fields
+    setVal('br_date', todayStr());
+    setVal('br_checkin', '');
+    setVal('br_checkout', '');
+    setVal('br_nights', '');
+    setVal('br_main_places', '');
+    setVal('br_extra_places', '');
+    $('submit-btn').textContent = app.docType === 'booking' ? 'Сформировать заявку' : 'Сформировать договор';
   };
 
   // ============================================================

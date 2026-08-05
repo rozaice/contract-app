@@ -277,6 +277,21 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Oxygen,Ubunt
       </div>
     </div>
 
+    <!-- Tent sums -->
+    <div class="card field-section" id="sums-params">
+      <h2>Суммы</h2>
+      <div class="form-row">
+        <div class="form-group">
+          <label for="zadatok">Сумма задатка (₽)</label>
+          <input type="number" id="zadatok" step="0.01" min="0" placeholder="0.00">
+        </div>
+        <div class="form-group">
+          <label for="itogo">Общая стоимость аренды (₽)</label>
+          <input type="number" id="itogo" step="0.01" min="0" placeholder="0.00">
+        </div>
+      </div>
+    </div>
+
     <!-- Individual fields -->
     <div class="card field-section" id="individual-fields">
       <h2>Данные физического лица</h2>
@@ -853,8 +868,12 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Oxygen,Ubunt
 
   app.updateDocTypeSections = function() {
     var isBanyaBooking = app.service === 'Аренда бани' && app.docType === 'booking';
-    $('booking-params').classList.toggle('show', app.docType === 'booking' && !isBanyaBooking);
+    var isTentBooking = app.service === 'Аренда шатра' && app.docType === 'booking';
+    $('booking-params').classList.toggle('show', app.docType === 'booking' && !isBanyaBooking && !isTentBooking);
     $('services-params').classList.toggle('show', isBanyaBooking);
+    $('sums-params').classList.toggle('show', app.service === 'Аренда шатра');
+    var endDayInput = $('rent_endday');
+    if (endDayInput) endDayInput.parentElement.classList.toggle('hidden-field', app.service === 'Аренда шатра');
   };
 
   app.addServiceRow = function() {
@@ -966,6 +985,9 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Oxygen,Ubunt
     data.rent_endtime = val('rent_endtime');
     data.rent_time = val('rent_time');
 
+    data.zadatok = val('zadatok');
+    data.itogo = val('itogo');
+
     data.br_date = val('br_date');
     data.br_checkin = val('br_checkin');
     data.br_checkout = val('br_checkout');
@@ -1044,6 +1066,14 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Oxygen,Ubunt
         if (!data.rent_endtime) errors.push('Укажите время окончания аренды');
         var timeNum = parseFloat(String(data.rent_time || '').replace(',', '.'));
         if (!timeNum || timeNum <= 0) errors.push('Укажите продолжительность аренды');
+      } else if (data.service === 'Аренда шатра') {
+        if (!data.rent_startday) errors.push('Укажите дату начала аренды');
+        if (!data.rent_starttime) errors.push('Укажите время начала аренды');
+        if (!data.rent_endtime) errors.push('Укажите время окончания аренды');
+        var timeNum = parseFloat(String(data.rent_time || '').replace(',', '.'));
+        if (!timeNum || timeNum <= 0) errors.push('Укажите продолжительность аренды');
+        if (!data.zadatok || parseFloat(data.zadatok) <= 0) errors.push('Укажите сумму задатка');
+        if (!data.itogo || parseFloat(data.itogo) <= 0) errors.push('Укажите общую стоимость аренды');
       } else {
         if (!data.br_date) errors.push('Укажите дату бронирования');
         if (!data.br_checkin) errors.push('Укажите дату заезда');
@@ -1082,6 +1112,10 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Oxygen,Ubunt
     var timeNum = parseFloat(String(data.rent_time || '').replace(',', '.'));
     var summ = app.service === 'Аренда бани' && !isNaN(timeNum) && timeNum > 0 ? Math.round(10000 * timeNum * 100) / 100 : 0;
     var dop = data.dop || 0;
+    var zadatok = parseFloat(String(data.zadatok || '').replace(',', '.')) || 0;
+    var itogo = app.service === 'Аренда шатра'
+      ? (parseFloat(String(data.itogo || '').replace(',', '.')) || 0)
+      : (summ + dop);
 
     var p = {
       'npp': data.contract_number,
@@ -1103,7 +1137,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Oxygen,Ubunt
       'summ': summ.toFixed(2).replace('.', ','),
       'dop': dop.toFixed(2).replace('.', ','),
       'dopname': data.dopname || '',
-      'itogo': (summ + dop).toFixed(2).replace('.', ','),
+      'zadatok': zadatok.toFixed(2).replace('.', ','),
+      'itogo': itogo.toFixed(2).replace('.', ','),
       'datebr': formatDateRu(data.br_date),
       'datezaezd': formatDateRu(data.br_checkin),
       'dateviezd': formatDateRu(data.br_checkout),
@@ -1494,6 +1529,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Oxygen,Ubunt
     setVal('rent_endday', '');
     setVal('rent_endtime', '');
     setVal('rent_time', '');
+    setVal('zadatok', '');
+    setVal('itogo', '');
     app.calcTotals();
     // Reset additional services to a single empty row
     var rows = document.querySelectorAll('#services-list .service-row');

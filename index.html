@@ -1322,6 +1322,22 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Oxygen,Ubunt
     return attempt(fileName, contractNumber);
   };
 
+  app.uploadWithRetry = function(folderId, blob, fileName) {
+    function attempt(name) {
+      return app.uploadDocx(folderId, blob, name).catch(function(err) {
+        if (err && /Файл с таким именем уже есть|DISK_OBJ_22000/.test(err.message || '')) {
+          var nextName = name.replace(/(\d{2}\.\d{2}\.\d{4})/, '$1' + '2');
+          if (nextName === name) throw err;
+          return attempt(nextName);
+        }
+        throw err;
+      }).then(function(fileInfo) {
+        return { fileInfo: fileInfo, fileName: name, folderId: folderId };
+      });
+    }
+    return attempt(fileName);
+  };
+
   app.handleSubmit = function() {
     if (app.isProcessing) return;
     if (!app.config) {
@@ -1426,8 +1442,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Oxygen,Ubunt
       })
       .then(function(blob) {
         return app.getTargetFolder().then(function(folderId) {
-          return app.uploadDocx(folderId, blob, fileName).then(function(fileInfo) {
-            return { fileInfo: fileInfo, fileName: fileName, folderId: folderId };
+          return app.uploadWithRetry(folderId, blob, fileName).then(function(result) {
+            return result;
           });
         });
       })

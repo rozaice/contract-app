@@ -1147,14 +1147,18 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Oxygen,Ubunt
   // ============================================================
   // Main submit
   // ============================================================
-  app.uploadContract = function(folderId, blob, fileName, contractNumber) {
+  app.uploadContract = function(folderId, doc, fileName, contractNumber) {
     function attempt(name, number) {
-      return app.uploadDocx(folderId, blob, name).catch(function(err) {
-        if (err && /Файл с таким именем уже есть/.test(err.message || '')) {
+      return app.uploadDocx(folderId, doc.blob, name).catch(function(err) {
+        if (err && /Файл с таким именем уже есть|DISK_OBJ_22000/.test(err.message || '')) {
           var nextNumber = number.replace(/(\d{2}\.\d{2}\.\d{4})/, '$1' + '2');
           if (nextNumber === number) throw err;
           $('contract-number-display').textContent = nextNumber;
-          return attempt('Договор_' + nextNumber.replace(/\//g, '_') + '_' + app.service + '.docx', nextNumber);
+          var nextPlaceholders = Object.assign({}, doc.placeholders, { npp: nextNumber });
+          return app.processDocx(doc.arrayBuffer, nextPlaceholders).then(function(newBlob) {
+            doc.blob = newBlob;
+            return attempt('Договор_' + nextNumber.replace(/\//g, '_') + '_' + app.service + '.docx', nextNumber);
+          });
         }
         throw err;
       }).then(function(fileInfo) {
@@ -1201,12 +1205,14 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Oxygen,Ubunt
       })
       .then(function(arrayBuffer) {
         var placeholders = app.buildPlaceholders(data);
-        return app.processDocx(arrayBuffer, placeholders);
+        return app.processDocx(arrayBuffer, placeholders).then(function(blob) {
+          return { arrayBuffer: arrayBuffer, placeholders: placeholders, blob: blob };
+        });
       })
-      .then(function(blob) {
+      .then(function(doc) {
         var fileName = 'Договор_' + contractNumber.replace(/\//g, '_') + '_' + app.service + '.docx';
         return app.getTargetFolder().then(function(folderId) {
-          return app.uploadContract(folderId, blob, fileName, contractNumber).then(function(result) {
+          return app.uploadContract(folderId, doc, fileName, contractNumber).then(function(result) {
             contractNumber = result.contractNumber;
             return result;
           });

@@ -170,10 +170,6 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Oxygen,Ubunt
           <label for="contract_date">Дата договора</label>
           <input type="date" id="contract_date" onchange="app.generateNumber()">
         </div>
-        <div class="form-group">
-          <label for="contract_amount">Сумма договора (₽)</label>
-          <input type="number" id="contract_amount" step="0.01" min="0" placeholder="0.00">
-        </div>
       </div>
     </div>
 
@@ -1083,7 +1079,6 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Oxygen,Ubunt
       }
     } else {
       if (!data.contract_date) errors.push('Укажите дату договора');
-      if (!data.contract_amount || parseFloat(data.contract_amount) <= 0) errors.push('Укажите сумму договора');
     }
 
     if (data.guestType === 'individual') {

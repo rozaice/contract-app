@@ -308,8 +308,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Oxygen,Ubunt
       </div>
       <div class="form-row">
         <div class="form-group">
-          <label for="client_position">Должность руководителя</label>
-          <input type="text" id="client_position" placeholder="Генеральный директор">
+          <label for="client_position">в лице</label>
+          <input type="text" id="client_position" placeholder="директора">
         </div>
         <div class="form-group">
           <label for="client_fullname">ФИО руководителя</label>
@@ -346,6 +346,10 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Oxygen,Ubunt
         <div class="form-group">
           <label for="phone">Телефон</label>
           <input type="text" id="phone" placeholder="+7 (999) 123-45-67">
+        </div>
+        <div class="form-group">
+          <label for="email">Эл. почта</label>
+          <input type="email" id="email" placeholder="mail@example.ru">
         </div>
       </div>
     </div>
@@ -863,6 +867,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Oxygen,Ubunt
       data.client_position = '';
       data.client_fullname = '';
       data.client_doc = '';
+      data.email = '';
     } else {
       data.company_name = val('company_name');
       data.inn = val('inn');
@@ -877,6 +882,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Oxygen,Ubunt
       data.client_position = val('client_position');
       data.client_fullname = val('client_fullname');
       data.client_doc = val('client_doc');
+      data.email = val('email');
       // Individual fields empty
       data.full_name = '';
       data.passport_number = '';
@@ -955,8 +961,12 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Oxygen,Ubunt
       'client_address': data.legal_address || '',
       'client_account': data.bank_account || '',
       'client_bank_name': data.bank_name || '',
+      'client_bank': data.bank_name || '',
       'client_bik': data.bik || '',
       'client_kor_account': data.correspondent_account || '',
+      'client_correspondent': data.correspondent_account || '',
+      'client_phone': data.phone || '',
+      'client_email': data.email || '',
       CONTRACT_DATE: formatDateRu(data.contract_date),
       SERVICE_NAME: data.service,
       'price': amount.toFixed(2).replace('.', ','),
@@ -1305,6 +1315,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Oxygen,Ubunt
     setVal('client_position', '');
     setVal('client_fullname', '');
     setVal('client_doc', '');
+    setVal('email', '');
     // Clear booking fields
     setVal('br_date', todayStr());
     setVal('br_checkin', '');

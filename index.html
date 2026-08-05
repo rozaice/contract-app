@@ -344,8 +344,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Oxygen,Ubunt
           <input type="text" id="bik" placeholder="044525225">
         </div>
         <div class="form-group">
-          <label for="phone">Телефон</label>
-          <input type="text" id="phone" placeholder="+7 (999) 123-45-67">
+          <label for="legal_phone">Телефон</label>
+          <input type="text" id="legal_phone" placeholder="+7 (999) 123-45-67">
         </div>
         <div class="form-group">
           <label for="email">Эл. почта</label>
@@ -883,6 +883,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Oxygen,Ubunt
       data.client_fullname = val('client_fullname');
       data.client_doc = val('client_doc');
       data.email = val('email');
+      data.phone = val('legal_phone');
       // Individual fields empty
       data.full_name = '';
       data.passport_number = '';
@@ -1335,11 +1336,11 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Oxygen,Ubunt
     setVal('bank_account', '');
     setVal('correspondent_account', '');
     setVal('bik', '');
-    setVal('phone', '');
+    setVal('legal_phone', '');
+    setVal('email', '');
     setVal('client_position', '');
     setVal('client_fullname', '');
     setVal('client_doc', '');
-    setVal('email', '');
     // Clear booking fields
     setVal('br_date', todayStr());
     setVal('br_checkin', '');

@@ -32,6 +32,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Oxygen,Ubunt
 .toggle-btn{flex:1;padding:10px 16px;text-align:center;cursor:pointer;font-size:14px;font-weight:500;border:none;background:transparent;color:var(--text2);transition:all .15s;font-family:inherit}
 .toggle-btn:hover{background:rgba(47,198,246,.08)}
 .toggle-btn.active{background:var(--blue);color:#fff;box-shadow:0 2px 8px rgba(47,198,246,.3)}
+.toggle-btn.disabled{opacity:.45;cursor:not-allowed}
+.toggle-btn.disabled:hover{background:transparent}
 .service-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:16px}
 @media(max-width:500px){.service-grid{grid-template-columns:1fr}}
 .service-card{border:2px solid var(--border);border-radius:var(--rad);padding:14px 12px;text-align:center;cursor:pointer;transition:all .15s;background:var(--card);font-size:14px;font-weight:500;color:var(--text)}
@@ -40,8 +42,6 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Oxygen,Ubunt
 .checkbox-row{display:flex;align-items:center;gap:10px;margin-bottom:4px}
 .checkbox-row input[type=checkbox]{width:18px;height:18px;cursor:pointer;accent-color:var(--blue)}
 .checkbox-row label{cursor:pointer;font-size:14px;user-select:none}
-.nds-field{display:none;margin-top:8px}
-.nds-field.show{display:block}
 .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:10px 28px;border:none;border-radius:6px;font-size:14px;font-weight:500;cursor:pointer;transition:all .15s;font-family:inherit;text-decoration:none}
 .btn-primary{background:var(--blue);color:#fff}
 .btn-primary:hover{background:var(--blue-h)}
@@ -175,14 +175,35 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Oxygen,Ubunt
           <input type="number" id="contract_amount" step="0.01" min="0" placeholder="0.00">
         </div>
       </div>
-      <div class="checkbox-row">
-        <input type="checkbox" id="nds_enabled" onchange="app.toggleNDS()">
-        <label for="nds_enabled">НДС</label>
-      </div>
-      <div class="nds-field form-row one" id="nds-field">
+    </div>
+
+    <!-- Rental period -->
+    <div class="card">
+      <h2>Период аренды</h2>
+      <div class="form-row">
         <div class="form-group">
-          <label for="nds_percent">Ставка НДС (%)</label>
-          <input type="number" id="nds_percent" value="20" min="0" max="100" step="0.1">
+          <label for="rent_startday">Дата начала аренды</label>
+          <input type="date" id="rent_startday">
+        </div>
+        <div class="form-group">
+          <label for="rent_starttime">Время начала аренды</label>
+          <input type="time" id="rent_starttime" onchange="app.calcRentDuration()">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label for="rent_endday">Дата окончания аренды</label>
+          <input type="date" id="rent_endday">
+        </div>
+        <div class="form-group">
+          <label for="rent_endtime">Время окончания аренды</label>
+          <input type="time" id="rent_endtime" onchange="app.calcRentDuration()">
+        </div>
+      </div>
+      <div class="form-row one">
+        <div class="form-group">
+          <label for="rent_time">Продолжительность аренды (ч)</label>
+          <input type="text" id="rent_time" readonly placeholder="рассчитывается автоматически">
         </div>
       </div>
     </div>
@@ -595,6 +616,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Oxygen,Ubunt
   // App initialization
   // ============================================================
   app.init = function() {
+    app.applyServiceRestrictions();
     var auth = window.__BX_AUTH__ || {};
     if (auth.DOMAIN || auth.domain) {
       app.auth = {
@@ -766,6 +788,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Oxygen,Ubunt
   // Toggles
   // ============================================================
   app.toggleGuestType = function(type) {
+    if (app.service === 'Аренда бани' && type === 'individual') return;
     app.guestType = type;
     var btns = document.querySelectorAll('#guest-toggle .toggle-btn');
     btns.forEach(function(b) { b.classList.toggle('active', b.dataset.type === type); });
@@ -777,10 +800,33 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Oxygen,Ubunt
     document.querySelectorAll('.service-card').forEach(function(c) { c.classList.remove('active'); });
     el.classList.add('active');
     app.service = el.dataset.service;
+    app.applyServiceRestrictions();
   };
 
-  app.toggleNDS = function() {
-    $('nds-field').classList.toggle('show', $('nds_enabled').checked);
+  app.applyServiceRestrictions = function() {
+    var indBtn = document.querySelector('#guest-toggle [data-type="individual"]');
+    if (!indBtn) return;
+    if (app.service === 'Аренда бани') {
+      indBtn.classList.add('disabled');
+      if (app.guestType === 'individual') app.toggleGuestType('legal');
+    } else {
+      indBtn.classList.remove('disabled');
+    }
+  };
+
+  app.calcRentDuration = function() {
+    var st = val('rent_starttime');
+    var et = val('rent_endtime');
+    if (st && et) {
+      var s = st.split(':');
+      var e = et.split(':');
+      var mins = (parseInt(e[0], 10) * 60 + parseInt(e[1], 10)) - (parseInt(s[0], 10) * 60 + parseInt(s[1], 10));
+      if (mins < 0) mins += 24 * 60;
+      var hours = mins / 60;
+      setVal('rent_time', (hours % 1 === 0 ? String(hours) : hours.toFixed(1).replace('.', ',')).replace(',0$', ''));
+    } else {
+      setVal('rent_time', '');
+    }
   };
 
   app.toggleDocType = function(type) {
@@ -832,9 +878,13 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Oxygen,Ubunt
     data.contract_number = $('contract-number-display').textContent;
     data.service = app.service;
     data.contract_amount = val('contract_amount');
-    data.nds_enabled = $('nds_enabled').checked;
-    data.nds_percent = data.nds_enabled ? parseFloat(val('nds_percent')) || 0 : 0;
     data.guestType = app.guestType;
+
+    data.rent_startday = val('rent_startday');
+    data.rent_starttime = val('rent_starttime');
+    data.rent_endday = val('rent_endday');
+    data.rent_endtime = val('rent_endtime');
+    data.rent_time = val('rent_time');
 
     data.br_date = val('br_date');
     data.br_checkin = val('br_checkin');
@@ -930,9 +980,6 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Oxygen,Ubunt
   // ============================================================
   app.buildPlaceholders = function(data) {
     var amount = parseFloat(data.contract_amount) || 0;
-    var ndsPct = data.nds_percent || 0;
-    var ndsAmount = data.nds_enabled ? +(amount * ndsPct / 100).toFixed(2) : 0;
-    var totalWithNds = amount + ndsAmount;
 
     var p = {
       'npp': data.contract_number,
@@ -946,6 +993,11 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Oxygen,Ubunt
       'contact.passport_code': data.passport_code || '',
       'contact.passport_address': data.registration_address || '',
       'contact.phone': data.phone || '',
+      'startday': formatDateRu(data.rent_startday),
+      'starttime': data.rent_starttime || '',
+      'endday': formatDateRu(data.rent_endday),
+      'endtime': data.rent_endtime || '',
+      'time': data.rent_time || '',
       'datebr': formatDateRu(data.br_date),
       'datezaezd': formatDateRu(data.br_checkin),
       'dateviezd': formatDateRu(data.br_checkout),
@@ -971,10 +1023,6 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Oxygen,Ubunt
       CONTRACT_DATE: formatDateRu(data.contract_date),
       SERVICE_NAME: data.service,
       'price': amount.toFixed(2).replace('.', ','),
-      NDS_ENABLED: data.nds_enabled ? 'Да' : 'Нет',
-      NDS_PERCENT: String(ndsPct),
-      NDS_AMOUNT: ndsAmount.toFixed(2).replace('.', ','),
-      AMOUNT_WITH_NDS: totalWithNds.toFixed(2).replace('.', ','),
       CURRENT_DATE: formatDateRu(todayStr()),
       CURRENT_YEAR: currentYear(),
       GUEST_TYPE: data.guestType === 'legal' ? 'Юридическое лицо' : 'Физическое лицо',
@@ -1313,9 +1361,12 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Oxygen,Ubunt
     hideStatus();
     app.setDefaultDate();
     setVal('contract_amount', '');
-    $('nds_enabled').checked = false;
-    app.toggleNDS();
-    setVal('nds_percent', '20');
+    // Clear rental period fields
+    setVal('rent_startday', '');
+    setVal('rent_starttime', '');
+    setVal('rent_endday', '');
+    setVal('rent_endtime', '');
+    setVal('rent_time', '');
     // Clear individual fields
     setVal('last_name', '');
     setVal('first_name', '');

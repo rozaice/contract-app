@@ -241,6 +241,42 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Oxygen,Ubunt
       </div>
     </div>
 
+    <!-- Additional services -->
+    <div class="card field-section" id="services-params">
+      <h2>Дополнительные услуги</h2>
+      <div id="services-list">
+        <div class="form-row service-row">
+          <div class="form-group">
+            <label>Наименование</label>
+            <input type="text" class="svc-name" placeholder="Например, веники">
+          </div>
+          <div class="form-group">
+            <label>Стоимость (₽)</label>
+            <input type="number" class="svc-cost" step="0.01" min="0" oninput="app.calcDop()">
+          </div>
+          <div class="form-group">
+            <label>&nbsp;</label>
+            <button type="button" class="btn btn-secondary" onclick="app.removeServiceRow(this)">Удалить</button>
+          </div>
+        </div>
+      </div>
+      <div class="form-row one">
+        <div class="form-group">
+          <button type="button" class="btn btn-secondary" onclick="app.addServiceRow()">Добавить услугу</button>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Сумма аренды (₽)</label>
+          <div class="contract-number-display" id="summ-display">0,00</div>
+        </div>
+        <div class="form-group">
+          <label>Итого доп. услуги (₽)</label>
+          <div class="contract-number-display" id="dop-display">0,00</div>
+        </div>
+      </div>
+    </div>
+
     <!-- Individual fields -->
     <div class="card field-section" id="individual-fields">
       <h2>Данные физического лица</h2>
@@ -801,6 +837,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Oxygen,Ubunt
     el.classList.add('active');
     app.service = el.dataset.service;
     app.applyServiceRestrictions();
+    app.updateDocTypeSections();
   };
 
   app.applyServiceRestrictions = function() {
@@ -812,6 +849,48 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Oxygen,Ubunt
     } else {
       indBtn.classList.remove('disabled');
     }
+  };
+
+  app.updateDocTypeSections = function() {
+    var isBanyaBooking = app.service === 'Аренда бани' && app.docType === 'booking';
+    $('booking-params').classList.toggle('show', app.docType === 'booking' && !isBanyaBooking);
+    $('services-params').classList.toggle('show', isBanyaBooking);
+  };
+
+  app.addServiceRow = function() {
+    var row = document.createElement('div');
+    row.className = 'form-row service-row';
+    row.innerHTML = '<div class="form-group"><label>Наименование</label><input type="text" class="svc-name" placeholder="Например, веники"></div>' +
+      '<div class="form-group"><label>Стоимость (₽)</label><input type="number" class="svc-cost" step="0.01" min="0" oninput="app.calcDop()"></div>' +
+      '<div class="form-group"><label>&nbsp;</label><button type="button" class="btn btn-secondary" onclick="app.removeServiceRow(this)">Удалить</button></div>';
+    $('services-list').appendChild(row);
+  };
+
+  app.removeServiceRow = function(btn) {
+    var row = btn.closest('.service-row');
+    var rows = document.querySelectorAll('#services-list .service-row');
+    if (rows.length <= 1) {
+      row.querySelector('.svc-name').value = '';
+      row.querySelector('.svc-cost').value = '';
+    } else {
+      row.remove();
+    }
+    app.calcDop();
+  };
+
+  app.calcDop = function() {
+    var total = 0;
+    document.querySelectorAll('#services-list .service-row .svc-cost').forEach(function(inp) {
+      total += parseFloat(inp.value) || 0;
+    });
+    $('dop-display').textContent = total.toFixed(2).replace('.', ',');
+  };
+
+  app.calcTotals = function() {
+    var timeNum = parseFloat(String(val('rent_time') || '').replace(',', '.'));
+    var summ = app.service === 'Аренда бани' && !isNaN(timeNum) && timeNum > 0 ? Math.round(10000 * timeNum * 100) / 100 : 0;
+    $('summ-display').textContent = summ.toFixed(2).replace('.', ',');
+    app.calcDop();
   };
 
   app.calcRentDuration = function() {
@@ -827,6 +906,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Oxygen,Ubunt
     } else {
       setVal('rent_time', '');
     }
+    app.calcTotals();
   };
 
   app.toggleDocType = function(type) {
@@ -834,7 +914,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Oxygen,Ubunt
     var btns = document.querySelectorAll('#doc-type-toggle .toggle-btn');
     btns.forEach(function(b) { b.classList.toggle('active', b.dataset.type === type); });
     $('contract-params').classList.toggle('hide', type !== 'contract');
-    $('booking-params').classList.toggle('show', type === 'booking');
+    app.updateDocTypeSections();
     $('submit-btn').textContent = type === 'booking' ? 'Сформировать заявку' : 'Сформировать договор';
     if (type === 'booking' && !val('br_date')) setVal('br_date', todayStr());
   };
@@ -893,6 +973,16 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Oxygen,Ubunt
     data.br_main_places = val('br_main_places');
     data.br_extra_places = val('br_extra_places');
 
+    var services = [];
+    document.querySelectorAll('#services-list .service-row').forEach(function(row) {
+      var name = row.querySelector('.svc-name').value.trim();
+      var cost = parseFloat(row.querySelector('.svc-cost').value) || 0;
+      if (name) services.push({ name: name, cost: cost });
+    });
+    data.extra_services = services;
+    data.dop = services.reduce(function(sum, s) { return sum + s.cost; }, 0);
+    data.dopname = services.map(function(s) { return s.name; }).join(', ');
+
     if (app.guestType === 'individual') {
       data.last_name = val('last_name');
       data.first_name = val('first_name');
@@ -947,11 +1037,20 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Oxygen,Ubunt
   app.validateForm = function(data) {
     var errors = [];
     if (data.docType === 'booking') {
-      if (!data.br_date) errors.push('Укажите дату бронирования');
-      if (!data.br_checkin) errors.push('Укажите дату заезда');
-      if (!data.br_checkout) errors.push('Укажите дату выезда');
-      if (!data.br_nights || parseInt(data.br_nights, 10) <= 0) errors.push('Количество ночей должно быть больше 0');
-      if (!data.br_main_places || parseInt(data.br_main_places, 10) <= 0) errors.push('Укажите количество основных мест');
+      if (data.service === 'Аренда бани') {
+        if (!data.rent_startday) errors.push('Укажите дату начала аренды');
+        if (!data.rent_starttime) errors.push('Укажите время начала аренды');
+        if (!data.rent_endday) errors.push('Укажите дату окончания аренды');
+        if (!data.rent_endtime) errors.push('Укажите время окончания аренды');
+        var timeNum = parseFloat(String(data.rent_time || '').replace(',', '.'));
+        if (!timeNum || timeNum <= 0) errors.push('Укажите продолжительность аренды');
+      } else {
+        if (!data.br_date) errors.push('Укажите дату бронирования');
+        if (!data.br_checkin) errors.push('Укажите дату заезда');
+        if (!data.br_checkout) errors.push('Укажите дату выезда');
+        if (!data.br_nights || parseInt(data.br_nights, 10) <= 0) errors.push('Количество ночей должно быть больше 0');
+        if (!data.br_main_places || parseInt(data.br_main_places, 10) <= 0) errors.push('Укажите количество основных мест');
+      }
     } else {
       if (!data.contract_date) errors.push('Укажите дату договора');
       if (!data.contract_amount || parseFloat(data.contract_amount) <= 0) errors.push('Укажите сумму договора');
@@ -980,6 +1079,9 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Oxygen,Ubunt
   // ============================================================
   app.buildPlaceholders = function(data) {
     var amount = parseFloat(data.contract_amount) || 0;
+    var timeNum = parseFloat(String(data.rent_time || '').replace(',', '.'));
+    var summ = app.service === 'Аренда бани' && !isNaN(timeNum) && timeNum > 0 ? Math.round(10000 * timeNum * 100) / 100 : 0;
+    var dop = data.dop || 0;
 
     var p = {
       'npp': data.contract_number,
@@ -998,6 +1100,9 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Oxygen,Ubunt
       'endday': formatDateRu(data.rent_endday),
       'endtime': data.rent_endtime || '',
       'time': data.rent_time || '',
+      'summ': summ.toFixed(2).replace('.', ','),
+      'dop': dop.toFixed(2).replace('.', ','),
+      'dopname': data.dopname || '',
       'datebr': formatDateRu(data.br_date),
       'datezaezd': formatDateRu(data.br_checkin),
       'dateviezd': formatDateRu(data.br_checkout),
@@ -1308,7 +1413,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Oxygen,Ubunt
   };
 
   app.submitBooking = function(data) {
-    var datePart = (data.br_date || todayStr()).replace(/-/g, '.');
+    var datePart = (data.br_date || data.rent_startday || todayStr()).replace(/-/g, '.');
     var fileName = 'Заявка_на_бронирование_' + datePart + '_' + app.service + '.docx';
 
     app.findTemplateFile()
@@ -1367,6 +1472,15 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Oxygen,Ubunt
     setVal('rent_endday', '');
     setVal('rent_endtime', '');
     setVal('rent_time', '');
+    app.calcTotals();
+    // Reset additional services to a single empty row
+    var rows = document.querySelectorAll('#services-list .service-row');
+    for (var i = 1; i < rows.length; i++) rows[i].remove();
+    if (rows.length > 0) {
+      rows[0].querySelector('.svc-name').value = '';
+      rows[0].querySelector('.svc-cost').value = '';
+    }
+    app.calcDop();
     // Clear individual fields
     setVal('last_name', '');
     setVal('first_name', '');

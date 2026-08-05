@@ -1147,6 +1147,23 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Oxygen,Ubunt
   // ============================================================
   // Main submit
   // ============================================================
+  app.uploadContract = function(folderId, blob, fileName, contractNumber) {
+    function attempt(name, number) {
+      return app.uploadDocx(folderId, blob, name).catch(function(err) {
+        if (err && /Файл с таким именем уже есть/.test(err.message || '')) {
+          var nextNumber = number.replace(/(\d{2}\.\d{2}\.\d{4})/, '$1' + '2');
+          if (nextNumber === number) throw err;
+          $('contract-number-display').textContent = nextNumber;
+          return attempt('Договор_' + nextNumber.replace(/\//g, '_') + '_' + app.service + '.docx', nextNumber);
+        }
+        throw err;
+      }).then(function(fileInfo) {
+        return { fileInfo: fileInfo, fileName: name, folderId: folderId, contractNumber: number };
+      });
+    }
+    return attempt(fileName, contractNumber);
+  };
+
   app.handleSubmit = function() {
     if (app.isProcessing) return;
     if (!app.config) {
@@ -1189,8 +1206,9 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Oxygen,Ubunt
       .then(function(blob) {
         var fileName = 'Договор_' + contractNumber.replace(/\//g, '_') + '_' + app.service + '.docx';
         return app.getTargetFolder().then(function(folderId) {
-          return app.uploadDocx(folderId, blob, fileName).then(function(fileInfo) {
-            return { fileInfo: fileInfo, fileName: fileName, folderId: folderId };
+          return app.uploadContract(folderId, blob, fileName, contractNumber).then(function(result) {
+            contractNumber = result.contractNumber;
+            return result;
           });
         });
       })

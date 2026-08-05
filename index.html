@@ -1103,6 +1103,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Oxygen,Ubunt
       'summ': summ.toFixed(2).replace('.', ','),
       'dop': dop.toFixed(2).replace('.', ','),
       'dopname': data.dopname || '',
+      'itogo': (summ + dop).toFixed(2).replace('.', ','),
       'datebr': formatDateRu(data.br_date),
       'datezaezd': formatDateRu(data.br_checkin),
       'dateviezd': formatDateRu(data.br_checkout),
